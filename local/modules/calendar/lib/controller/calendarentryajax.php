@@ -677,6 +677,43 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		{
 			\CCalendar::SaveUserTimezoneName(\CCalendar::GetUserId(), $request['default_tz']);
 		}
+         /* Реализация сохранения названия события по привязанному контакту */
+        $artMaxUFFields = [];
+        foreach($request as $field => $value)
+        {
+            if (mb_strpos($field, 'UF_') === 0)
+            {
+                $artMaxUFFields[$field] = $value;
+            }
+        }
+
+        $str_to_event_name = "";
+        foreach ($artMaxUFFields as $field => $value){
+            if( $field === 'UF_CRM_CAL_EVENT' ){
+                foreach ($value as $contact_code){
+                    $contact_user_id = explode('_', $contact_code);
+                    if( $contact_user_id[0] == 'C' ){
+                        $fields = \CCrmContact::GetByID($contact_user_id[1], false);
+                        $dbCont = \CCrmFieldMulti::GetList(
+                            array('ID' => 'asc'), //сортировка
+                            array(
+                                'ELEMENT_ID' => $contact_user_id[1],
+                                'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                                'TYPE_ID' => "PHONE",
+                            ) //фильтр
+                        );
+                        if($arCont = $dbCont->Fetch()){
+                            //$arCont["VALUE"] там значение
+
+                            $contact_phone = $arCont['VALUE'];
+                            $contact_full_name = $fields['FULL_NAME'];
+
+                            $str_to_event_name .= " ".$contact_full_name." ".$contact_phone;
+                        }
+                    }
+                }
+            }
+        }
 
 		$entryFields = [
 			'ID' => $id,
@@ -685,7 +722,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 			'SKIP_TIME' => $skipTime,
 			'TZ_FROM' => $tzFrom,
 			'TZ_TO' => $tzTo,
-			'NAME' => $name,
+			'NAME' => $name.$str_to_event_name,
 			'FIO' => $fio,
 			'PHONE' => $phone,
 			'DESCRIPTION' => trim($request['desc']),
@@ -715,6 +752,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 		$entryFields['ATTENDEES_CODES'] = $accessCodes;
 		$entryFields['ATTENDEES'] = \CCalendar::GetDestinationUsers($accessCodes);
+
 		$response['reload'] = true;
 
 		if ($request['exclude_users'] && !empty($entryFields['ATTENDEES']))
@@ -784,6 +822,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 			{
 				$attendees = array_diff($request['newAttendeesList'], $excludeUsers);
 			}
+
 
 			$timezoneName = \CCalendar::GetUserTimezoneName(\CCalendar::GetUserId());
 			$timezoneOffset = Util::getTimezoneOffsetUTC($timezoneName);
