@@ -1,0 +1,62 @@
+*.log
+*.xml
+*.txt
+*.csv
+*.json
+*.json.example
+*.xls
+*.xslx
+*.tgz
+*.old
+*.tar
+*.zip
+/.htsecure
+/urlrewrite.php
+
+# Cache section
+/bitrix/cache
+/bitrix/managed_cache
+/bitrix/stack_cache
+
+# Raw php files ib bitrix folder
+/bitrix/[^/]*\.php$
+
+# Legacy fields
+/bitrix/web.config
+
+# Technical bitrix folder
+/bitrix/backup
+/bitrix/image_uploader
+/bitrix/webdav
+/bitrix/modules
+/bitrix/sounds
+/bitrix/services
+/bitrix/activities
+/bitrix/otp
+/bitrix/themes
+/bitrix/tools
+/bitrix/css
+/bitrix/images
+/bitrix/panel
+/bitrix/gadgets
+/bitrix/mobileapp
+/bitrix/blocks
+/bitrix/admin
+/bitrix/updates
+/bitrix/js
+/bitrix/fonts
+/bitrix/catalog_export
+
+# Bitrix parts
+/bitrix/activities/bitrix
+/bitrix/components/bitrix
+/bitrix/gadgets/bitrix
+/bitrix/wizards/bitrix
+
+/bitrix/php_interface/dbconn.php
+/bitrix/php_interface/after_connect.php
+/bitrix/php_interface/after_connect_d7.php
+
+# File storage & tmp directories
+/upload
+/bitrix/tmp
