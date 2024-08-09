@@ -686,35 +686,39 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 $artMaxUFFields[$field] = $value;
             }
         }
-/*
+
         $str_to_event_name = "";
         foreach ($artMaxUFFields as $field => $value){
             if( $field === 'UF_CRM_CAL_EVENT' ){
                 foreach ($value as $contact_code){
-                    $contact_user_id = explode('_', $contact_code);
-                    if( $contact_user_id[0] == 'C' ){
-                        $fields = \CCrmContact::GetByID($contact_user_id[1], false);
-                        $dbCont = \CCrmFieldMulti::GetList(
-                            array('ID' => 'asc'), //сортировка
-                            array(
-                                'ELEMENT_ID' => $contact_user_id[1],
-                                'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
-                                'TYPE_ID' => "PHONE",
-                            ) //фильтр
-                        );
-                        if($arCont = $dbCont->Fetch()){
-                            //$arCont["VALUE"] там значение
+                    $lead_id = explode('_', $contact_code);
+                    if( $lead_id[0] == 'L' ){
+                        $lead_fields = \CCrmLead::GetByID($lead_id[1], false);
 
-                            $contact_phone = $arCont['VALUE'];
-                            $contact_full_name = $fields['FULL_NAME'];
+                        if( $lead_fields['CONTACT_ID'] != "" && $lead_fields['CONTACT_ID'] != false ){
+                            $c_fields = \CCrmContact::GetByID($lead_fields['CONTACT_ID'], false);
+                            $dbCont = \CCrmFieldMulti::GetList(
+                                array('ID' => 'asc'), //сортировка
+                                array(
+                                    'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
+                                    'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                                    'TYPE_ID' => "PHONE",
+                                ) //фильтр
+                            );
+                            if($arCont = $dbCont->Fetch()){
+                                //$arCont["VALUE"] там значение
 
-                            $str_to_event_name .= " ".$contact_full_name." ".$contact_phone;
+                                $contact_phone = $arCont['VALUE'];
+                                $contact_full_name = $c_fields['FULL_NAME'];
+
+                                $str_to_event_name .= " ".$contact_full_name." ".$contact_phone;
+                            }
                         }
                     }
                 }
             }
-        }
-*/
+        } 
+
 		$entryFields = [
 			'ID' => $id,
 			'DATE_FROM' => $dateFrom,

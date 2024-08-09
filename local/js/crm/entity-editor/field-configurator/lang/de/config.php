@@ -1,3 +1,0 @@
-<?php
-$MESS["CRM_PHONE_NUMBER_INPUT_FIELD_CONFIGURATOR_PLACEHOLDER"] = "Geben Sie den Code oder Namen des Landes ein";
-$MESS["CRM_PHONE_NUMBER_INPUT_FIELD_CONFIGURATOR_TITLE"] = "Standardland";

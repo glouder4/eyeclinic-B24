@@ -1,4 +1,0 @@
-<?php
-$MESS["CRM_FILE_UPLOADER_POPUP_CANCEL"] = "Abbrechen (Esc)";
-$MESS["CRM_FILE_UPLOADER_POPUP_TITLE"] = "Auftragsdateien";
-$MESS["CRM_FILE_UPLOADER_POPUP_TITLE_2"] = "Dateien";
