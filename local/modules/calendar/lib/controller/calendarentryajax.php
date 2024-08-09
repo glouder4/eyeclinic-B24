@@ -686,7 +686,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 $artMaxUFFields[$field] = $value;
             }
         }
-
+/*
         $str_to_event_name = "";
         foreach ($artMaxUFFields as $field => $value){
             if( $field === 'UF_CRM_CAL_EVENT' ){
@@ -714,7 +714,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 }
             }
         }
-
+*/
 		$entryFields = [
 			'ID' => $id,
 			'DATE_FROM' => $dateFrom,

@@ -1,0 +1,27 @@
+<?php
+$MESS["SIGN_EDITOR_BLOCKS_FIRST_PARTY"] = "Sender";
+$MESS["SIGN_EDITOR_BLOCKS_GENERAL"] = "Common";
+$MESS["SIGN_EDITOR_BLOCKS_PARTNER"] = "Recipient";
+$MESS["SIGN_EDITOR_BLOCK_ADD_TO_DOCUMENT"] = "Insert";
+$MESS["SIGN_EDITOR_BLOCK_CRM"] = "CRM field";
+$MESS["SIGN_EDITOR_BLOCK_CRM_HINT"] = "This field will be filled with data found in your CRM. If your CRM does not have relevant information and the field remains empty, it can be provided by any of the signing parties, in which case this new information will be saved to your CRM.";
+$MESS["SIGN_EDITOR_BLOCK_DATE"] = "Date";
+$MESS["SIGN_EDITOR_BLOCK_DATE_HINT"] = "Use this field to enter date values (e.g. contract date etc.)";
+$MESS["SIGN_EDITOR_BLOCK_FIRST_PARTY_REQUISITES_HINT"] = "This field contains your company details.";
+$MESS["SIGN_EDITOR_BLOCK_FIRST_PARTY_SIGNATURE_HINT"] = "This field contains your signature.";
+$MESS["SIGN_EDITOR_BLOCK_FIRST_PARTY_STAMP_HINT"] = "Your company stamp.";
+$MESS["SIGN_EDITOR_BLOCK_NUMBER"] = "Number";
+$MESS["SIGN_EDITOR_BLOCK_NUMBER_HINT"] = "Use this field to provide the document number. You can enter the number as a static value, or use the auto numbering feature.";
+$MESS["SIGN_EDITOR_BLOCK_PARTNER_REQUISITES_HINT"] = "This field contains the recipient details.";
+$MESS["SIGN_EDITOR_BLOCK_PARTNER_SIGNATURE_HINT"] = "This field contains the recipient's signature.";
+$MESS["SIGN_EDITOR_BLOCK_PARTNER_STAMP_HINT"] = "This field contains the recipient's stamp.";
+$MESS["SIGN_EDITOR_BLOCK_REQUISITES"] = "Details";
+$MESS["SIGN_EDITOR_BLOCK_SIGNATURE"] = "Signature";
+$MESS["SIGN_EDITOR_BLOCK_STAMP_MSGVER_1"] = "Stamp";
+$MESS["SIGN_EDITOR_BLOCK_TEXT"] = "Text";
+$MESS["SIGN_EDITOR_BLOCK_TEXT_HINT"] = "This field can receive any text information.";
+$MESS["SIGN_EDITOR_EDIT"] = "Edit";
+$MESS["SIGN_EDITOR_EDITING"] = "Document editor";
+$MESS["SIGN_EDITOR_ERROR_SAVE_REFERENCE_BACK"] = "Back";
+$MESS["SIGN_EDITOR_ERROR_SAVE_REFERENCE_BACK_TITLE"] = "Attention";
+$MESS["SIGN_EDITOR_SAVE"] = "Save";
