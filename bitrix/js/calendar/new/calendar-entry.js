@@ -675,7 +675,6 @@
 	{
 		this.calendar = calendar;
 		this.data = data;
-		console.log("function Entry" + data);
 		this.id = data.ID || 0;
 
 		if (!this.data.DT_SKIP_TIME)
@@ -693,13 +692,10 @@
 			? this.calendar.roomsManager.getRoomName(data.SECT_ID) + ': ' + data.NAME
 			: data.NAME
 		;
-		console.log("function Entry data.NAME "+data.NAME);
  	        // Corte
 		this.phone = data.PHONE;
 		this.fio = data.FIO;
-		
-		console.log("function Entry data.FIO " + data.FIO);		
-		console.log("function Entry this.fio " + this.fio);		
+
 		this.parts = [];
 
 		var

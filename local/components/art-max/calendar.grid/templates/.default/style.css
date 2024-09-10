@@ -2788,6 +2788,27 @@ select:not(:-internal-list-box) {
 	display: flex;
 	align-items: center;
 }
+.calendar-field-container-string-select .calendar-field-block.custom-fields{
+	display: flex;
+	align-items: center;
+
+	flex-wrap: wrap;
+	gap: 5px;
+}
+.calendar-field-container-string-select .calendar-field-block.custom-fields .ui-entity-editor-block-title{
+	padding-left: 4px;
+}
+.calendar-field-container-string-select .calendar-field-block.custom-fields .ui-entity-editor-block-title>.ui-entity-editor-block-title-text{
+	color: #a3a9b1;
+	font: 12px / 14px var(--ui-font-family-primary, var(--ui-font-family-helvetica));
+}
+.calendar-field-container-string-select .calendar-field-block>.row{
+	display: flex;
+	align-items: center;
+}
+.calendar-field-container-string-select .calendar-field-block #service-name-wrapper{
+	width: 100%;
+}
 
 .calendar-field-container-string-select .calendar-field-select {
 	margin: 0 14px;

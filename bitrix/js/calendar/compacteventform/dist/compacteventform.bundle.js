@@ -35,7 +35,8 @@ this.BX = this.BX || {};
 	  _t30,
 	  _t31,
 	  _t32,
-	  _t33;
+	  _t33,
+	  _t34;
 	class CompactEventForm extends main_core_events.EventEmitter {
 	  constructor(options = {}) {
 	    super();
@@ -79,7 +80,8 @@ this.BX = this.BX || {};
 	    }
 	    this.popup = this.getPopup(params);
 	    
-	    console.log("Bun params" + params);
+	    console.log("--- Bun params ---");
+		  console.log(params)
 	    console.log("Bun show "+ this);
             
 	    // Small hack to use transparent titlebar to drag&drop popup
@@ -225,7 +227,7 @@ this.BX = this.BX || {};
 			</div>
 		</div>`), this.DOM.titleOuterWrap = main_core.Tag.render(_t2 || (_t2 = _`
 			<div class="calendar-field-container calendar-field-container-string-select">
-				<div class="calendar-field-block">
+				<div class="calendar-field-block"> 
 					${0}
 					${0}
 					${0}
@@ -234,15 +236,33 @@ this.BX = this.BX || {};
 				</div>
 			</div>
 				<div class="calendar-field-container calendar-field-container-string-select">
-				<div class="calendar-field-block">
+				<div class="calendar-field-block custom-fields">
 
-				  ${0}
-				  ${0}
+				  <div class="row">
+					  <div id="event-phone-field">
+						<div class="ui-entity-editor-block-title">
+							<label class="ui-entity-editor-block-title-text">Телефон</label>
+							${0}
+					  	</div>
+					  </div>
+					  <div id="event-fio-field">
+						<div class="ui-entity-editor-block-title">
+							<label class="ui-entity-editor-block-title-text">ФИО</label>
+							${0}
+					  	</div>
+					  </div>
+				  </div>
+				  <div id="service-name-wrapper">
+					  <div class="ui-entity-editor-block-title">
+							<label class="ui-entity-editor-block-title-text">Название услуги</label>
+							${0}
+					  </div>
+				  </div>
 				</div>
 				</div>
 
 
-			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
+			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
 				<div class="calendar-field-block">
 					<div class="calendar-field-title">${0}:</div>
 					${0}
@@ -605,9 +625,12 @@ this.BX = this.BX || {};
 
 	    if (!excludes.includes('fio') && entry.fio !== this.DOM.fioInput.value) {
 	      fields.push('fio');                                                    
-	    }	    
+	    }
+		  if (!excludes.includes('servicename') && entry.serviceName !== this.DOM.serviceNameInput.value) {
+			  fields.push('servicename');
+		  }
 
-	    // Location
+		  // Location
 	    if (!excludes.includes('location') && this.locationSelector.getTextLocation(calendar_controls.Location.parseStringValue(entry.getLocation())) !== this.locationSelector.getTextLocation(calendar_controls.Location.parseStringValue(this.locationSelector.getTextValue()))) {
 	      fields.push('location');
 	    }
@@ -761,7 +784,6 @@ this.BX = this.BX || {};
 	    main_core.Event.bind(this.DOM.phoneInput, 'change', this.updatePhoneInputTitle.bind(this));
 
 	    return this.DOM.phoneInput;
-	    console.log("this.DOM.phoneInput" + this.DOM.phoneInput);
 
 	  }
 	getFIOControl() {
@@ -780,7 +802,20 @@ this.BX = this.BX || {};
 
 	    return this.DOM.fioInput;
 
-	  }	  
+	  }
+	  getServiceNameControl(){
+			this.DOM.serviceNameInput = main_core.Tag.render(_t34 || (_t34 = _`<input class="calendar-field calendar-field-string --text-overflow-none"
+					placeholder="${0}"
+					type="text"
+				/>`), "Название услуги");
+			this.bindFade();
+			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+
+			return this.DOM.serviceNameInput;
+		}
 	  bindFade() {
 	    let isInputFocus = false;
 	    main_core.Event.bind(this.DOM.titleInput, 'focusout', () => {
@@ -1166,6 +1201,9 @@ this.BX = this.BX || {};
 	    console.log("Bundle entry.getPhone() "+ entry.getPhone()+".");
         console.log("Bundle entry.getFIO() "+ entry.getFIO()+".");
 	    this.setFIOInputValue(entry.getFIO());
+		  console.log('--entry--')
+		  console.log(entry)
+		this.setServiceNameValue(entry.getServiceName());
 
 	    // Color
 	    this.colorSelector.setValue(entry.getColor() || section.color, false);
@@ -1258,9 +1296,13 @@ this.BX = this.BX || {};
 
 	  setFIOInputValue(name)
 	   {
-	   	console.log("func setFIOInputValue " + name);
 	    this.DOM.fioInput.value = name;
 	  }
+		setServiceNameValue(name)
+		{
+			console.log("func setServiceNameValue " + name);
+			this.DOM.serviceNameInput.value = name;
+		}
 
 	  setFormValuesLocation() {
 	    let entry = this.entry,
@@ -1306,7 +1348,8 @@ this.BX = this.BX || {};
 	      fio = main_core.Loc.getMessage('CALENDAR_UPDATE');
 	    }
 
-	    this.setFIOInputValue(fio);	    
+	    this.setFIOInputValue(fio);
+		this.setServiceNameValue(BX.util.htmlspecialchars(entry.getServiceName()));
 
 	    // Color
 	    this.colorSelector.setValue(entry.getColor() || section.color, false);

@@ -2787,6 +2787,7 @@ select:not(:-internal-list-box) {
 .calendar-field-container-string-select .calendar-field-block {
 	display: flex;
 	align-items: center;
+
 }
 
 .calendar-field-container-string-select .calendar-field-select {

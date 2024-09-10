@@ -597,6 +597,7 @@ this.BX = this.BX || {};
 	    this.name = this.data.NAME;
 	    this.phone = this.data.PHONE;
 	    this.fio = this.data.FIO;
+		this.serviceName = "EntryServiceNameField";
 
 	    this.userTimezoneOffsetFrom = parseInt(this.data['~USER_OFFSET_FROM']) || 0;
 	    this.userTimezoneOffsetTo = parseInt(this.data['~USER_OFFSET_TO']) || this.userTimezoneOffsetFrom;
@@ -952,6 +953,9 @@ this.BX = this.BX || {};
   	  getFIO() {
 	    return this.data.FIO || '';
 	  }
+		getServiceName() {
+			return this.serviceName;
+		}
 
 
 	  getColor() {
