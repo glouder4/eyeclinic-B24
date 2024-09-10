@@ -43,7 +43,7 @@
 /bitrix/blocks
 /bitrix/admin
 /bitrix/updates
-/bitrix/js
+#/bitrix/js
 /bitrix/fonts
 /bitrix/catalog_export
 
