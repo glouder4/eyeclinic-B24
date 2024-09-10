@@ -697,9 +697,9 @@
  	        // Corte
 		this.phone = data.PHONE;
 		this.fio = data.FIO;
-
-		console.log("function Entry data.FIO " + data.FIO);
-		console.log("function Entry this.fio " + this.fio);
+		
+		console.log("function Entry data.FIO " + data.FIO);		
+		console.log("function Entry this.fio " + this.fio);		
 		this.parts = [];
 
 		var

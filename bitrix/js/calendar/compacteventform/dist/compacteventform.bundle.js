@@ -99,7 +99,7 @@ this.BX = this.BX || {};
 	      calendar_entry.EntryManager.doDelayedActions();
 	    }
 
-	    console.log("Bun " + this.checkLocationView());
+	    console.log("Bun " + this.checkLocationView());	
 	    this.prepareData().then(() => {
 	      if (this.checkLocationView()) {
 	        this.setFormValuesLocation();
@@ -242,7 +242,7 @@ this.BX = this.BX || {};
 				</div>
 
 
-			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
+			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
 				<div class="calendar-field-block">
 					<div class="calendar-field-title">${0}:</div>
 					${0}
@@ -566,15 +566,6 @@ this.BX = this.BX || {};
 	      this.DOM.fioInput.title = '';
 	    }
 	}
-		updateserviceNameInputTitle() {
-			if (this.isFioOverflowing()) {
-				this.DOM.fioInput.title = this.DOM.fioInput.value;
-			} else {
-				this.DOM.fioInput.title = '';
-			}
-		}
-
-	//serviceNameInput
 	  isFioOverflowing() {
 	    const el = this.DOM.fioInput;
 	    return el.clientWidth < el.scrollWidth || el.clientHeight < el.scrollHeight;
@@ -789,24 +780,8 @@ this.BX = this.BX || {};
 
 	    return this.DOM.fioInput;
 
-	  }
-		getServiceNameControl(){
-			this.DOM.serviceNameInput = main_core.Tag.render(_t33 || (_t33 = _`
-			<input class="calendar-field calendar-field-string --text-overflow-none"
-				value=""
-				placeholder="${0}"
-				type="text"
-			/>
-		`), "Услуга");
-			this.bindFade();
-			main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.serviceNameInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.serviceNameInput, 'change', this.updateFioInputTitle.bind(this));
-
-			return this.DOM.serviceNameInput;
-		}
-		bindFade() {
+	  }	  
+	  bindFade() {
 	    let isInputFocus = false;
 	    main_core.Event.bind(this.DOM.titleInput, 'focusout', () => {
 	      if (this.DOM.titleInput.scrollWidth > this.DOM.titleInput.offsetWidth) {
