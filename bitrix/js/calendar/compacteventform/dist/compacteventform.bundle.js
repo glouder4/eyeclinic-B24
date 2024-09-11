@@ -36,7 +36,11 @@ this.BX = this.BX || {};
 	  _t31,
 	  _t32,
 	  _t33,
-	  _t34;
+	  _t34,
+	  _t35,
+		_t36,
+		_t37,
+		_t38;
 	class CompactEventForm extends main_core_events.EventEmitter {
 	  constructor(options = {}) {
 	    super();
@@ -78,6 +82,7 @@ this.BX = this.BX || {};
 	    if (this.popup) {
 	      this.popup.destroy();
 	    }
+
 	    this.popup = this.getPopup(params);
 	    
 	    console.log("--- Bun params ---");
@@ -252,17 +257,42 @@ this.BX = this.BX || {};
 					  	</div>
 					  </div>
 				  </div>
-				  <div id="service-name-wrapper">
-					  <div class="ui-entity-editor-block-title">
-							<label class="ui-entity-editor-block-title-text">Название услуги</label>
+					  <div id="service-name-wrapper">
+						  <div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
+								<label class="ui-entity-editor-block-title-text">Название услуги</label>
+								${0}
+						  </div>
+						  <div class="ui-entity-editor-block-title" id="service-time-duration">
+								<label class="ui-entity-editor-block-title-text">Длительность</label>
+								${0}
+						  </div>
+					  </div>
+					<div id="service-region-wrapper">
+					  	<div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
+							<label class="ui-entity-editor-block-title-text">Регион</label>
+								${0}
+						  </div>
+					</div>
+				  <div class="row">
+					  <div id="price-field-wrapper">
+						<div class="ui-entity-editor-block-title" id="price-field-title-wrapper">
+							<label class="ui-entity-editor-block-title-text">Цена</label>
 							${0}
+						</div>
+					  </div>
+					  
+					  <div id="doctor-field-wrapper">
+						<div class="ui-entity-editor-block-title" id="doctor-field-title-wrapper">
+							<label class="ui-entity-editor-block-title-text">Врач</label>
+							${0}
+						</div>
 					  </div>
 				  </div>
 				</div>
 				</div>
 
 
-			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
+			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl(),this.getServiceDurationControl(),this.getServiceRegionControl(),this.getServicePriceControl(),this.getServiceDoctorControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
 				<div class="calendar-field-block">
 					<div class="calendar-field-title">${0}:</div>
 					${0}
@@ -804,10 +834,7 @@ this.BX = this.BX || {};
 
 	  }
 	  getServiceNameControl(){
-			this.DOM.serviceNameInput = main_core.Tag.render(_t34 || (_t34 = _`<input class="calendar-field calendar-field-string --text-overflow-none"
-					placeholder="${0}"
-					type="text"
-				/>`), "Название услуги");
+		  this.DOM.serviceNameInput = main_core.Tag.render(_t34 || (_t34 = _`<select id="custom-service-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
 			this.bindFade();
 			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
 			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
@@ -815,6 +842,117 @@ this.BX = this.BX || {};
 			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
 
 			return this.DOM.serviceNameInput;
+		}
+
+		getServiceDurationControl(){
+			this.DOM.serviceDurationInput = main_core.Tag.render(_t35 || (_t35 = _`<select id="custom-service-duration-selector" class="calendar-field calendar-field-select --text-overflow-none">
+					<option value="5m">5 мин</option>
+					<option value="10m">10 мин</option>
+					<option value="15m">15 мин</option>
+					<option value="20m">20 мин</option>
+					<option value="25m">25 мин</option>
+					<option value="30m" selected>30 мин</option>
+					<option value="35m">35 мин</option>
+					<option value="40m">40 мин</option>
+					<option value="45m">45 мин</option>
+					<option value="50m">50 мин</option>
+					<option value="60m">60 мин</option>
+					<option value="90m">90 мин</option>
+				</select>`));
+			this.bindFade();
+			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+
+			return this.DOM.serviceDurationInput;
+		}
+		getServiceRegionControl(){
+			this.DOM.serviceRegionInput = main_core.Tag.render(_t36 || (_t36 = _`<select id="custom-service-region-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
+			this.bindFade();
+			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+
+			return this.DOM.serviceRegionInput;
+		}
+		getServicePriceControl(){
+			this.DOM.servicePriceInput = main_core.Tag.render(_t37 || (_t37 = _`
+				<div class="ui-entity-editor-content-block">
+					<span class="fields money field-wrap">
+						<span class="fields money field-item">
+							<div class="money-editor">
+								<input type="number" value="">
+							</div>
+						</span>
+					</span>
+				</div>
+			`));
+			this.bindFade();
+			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+
+			return this.DOM.servicePriceInput;
+		}
+
+		getServiceDoctorControl(){
+			this.DOM.serviceDoctorInput = main_core.Tag.render(_t38 || (_t38 = _`<select id="custom-doctor-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
+			this.bindFade();
+
+			let _this = this;
+			this.BX.ajax({
+				url: '/local/embedding/get-deal-fields.php',
+				method: 'GET',
+				dataType: 'json', // тип передаваемых данных
+				onsuccess: function(data) { // в случаи успеха, выполняем действия
+					if(data.hasOwnProperty('regions')){
+						let regions = `
+						<option value="0">--Не выбрано--</option>
+					  `;
+						for(let key in data.regions){
+							let region = data.regions[key];
+							regions += `
+								<option value="${region['ID']}">${region['VALUE']}</option>
+							  `;
+						}
+						_this.BX("custom-service-region-selector").innerHTML = regions;
+					}
+					if(data.hasOwnProperty('services')){
+						let services = `
+						<option value="0">--Не выбрано--</option>
+					  `;
+						for(let key in data.services){
+							let service = data.services[key];
+							services += `
+								<option value="${key}">${service['name']}</option>
+							  `;
+						}
+						_this.BX("custom-service-selector").innerHTML = services;
+					}
+					if(data.hasOwnProperty('doctors')){
+						let doctors = `
+						<option value="0">--Не выбрано--</option>
+					  `;
+						for(let key in data.doctors){
+							let doctor = data.doctors[key];
+							doctors += `
+								<option value="${doctor['ID']}">${doctor['VALUE']}</option>
+							  `;
+						}
+						_this.BX("custom-doctor-selector").innerHTML = doctors;
+					}
+				}
+			});
+
+			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+
+			return this.DOM.serviceDoctorInput;
 		}
 	  bindFade() {
 	    let isInputFocus = false;

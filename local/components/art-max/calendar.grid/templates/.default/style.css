@@ -2805,9 +2805,30 @@ select:not(:-internal-list-box) {
 .calendar-field-container-string-select .calendar-field-block>.row{
 	display: flex;
 	align-items: center;
+
+	width: 100%;
+}
+.calendar-field-container-string-select .calendar-field-block>.row>div{
+	width: 50%;
 }
 .calendar-field-container-string-select .calendar-field-block #service-name-wrapper{
 	width: 100%;
+
+	display: flex;
+	flex-direction: row;
+}
+.calendar-field-container-string-select .calendar-field-block>#service-name-wrapper>div{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	width: 50%;
+	max-width: 100%;
+}
+.calendar-field-container-string-select .calendar-field-block>#doctor-field-wrapper select,
+.calendar-field-container-string-select .calendar-field-block>#service-name-wrapper select{
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
 }
 
 .calendar-field-container-string-select .calendar-field-select {
@@ -2817,11 +2838,57 @@ select:not(:-internal-list-box) {
 	border-bottom: 1px solid #dde0e8;
 	height: 51px;
 }
+#price-field-wrapper .ui-entity-editor-content-block span.fields>span.money input {
+	box-sizing: border-box;
+	padding: 10px 9px;
+	min-height: 39px;
+	max-width: 100%;
+	outline: 0;
+	border: 1px solid #c4c7cc;
+	border-radius: var(--ui-field-border-radius, 1px);
+	background-color: #fff;
+	color: #424956;
+	font: 15px / 17px var(--ui-font-family-primary, var(--ui-font-family-helvetica));
+	transition: 220ms all ease;
+
+	display: inline-block;
+	margin-right: 10px;
+	width: 100%;
+}
+#price-field-wrapper #price-field-title-wrapper{
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+#doctor-field-wrapper>div{
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+#doctor-field-wrapper select{
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+}
+#service-region-wrapper{
+	width: 100%;
+}
+#service-region-wrapper>div{
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+#service-region-wrapper select{
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+}
 
 .calendar-field-container-string-select .calendar-field-select:after,
 .calendar-field-container-string-select .calendar-field-select:before {
 	background-color: #a9adb4;
 }
+
 
 /*endregion*/
 
