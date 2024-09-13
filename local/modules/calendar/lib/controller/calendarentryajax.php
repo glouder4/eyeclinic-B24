@@ -60,6 +60,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 	public function loadEntriesAction()
 	{
+        // Тут загружаются события
 		$request = $this->getRequest();
 		$monthFrom = (int)$request->getPost('month_from');
 		$yearFrom = (int)$request->getPost('year_from');
@@ -121,6 +122,11 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		if (!empty($sections))
 		{
 			$entries = $this->getEntries($sections, $limits);
+            /* echo "<pre>";
+                print_r($entries);
+            echo "</pre>";
+            http_response_code(500);
+            return false; */
 
 			if (
 				$direction === self::DIRECTION_BOTH
@@ -564,10 +570,47 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		];
 	}
 
+    static function updateEventFields(array $event, array $fields): void
+    {
+        global $DB;
+
+        if (!$fields)
+        {
+            return;
+        }
+
+        CTimeZone::Disable();
+
+        $strSql = "UPDATE b_calendar_event SET ".
+            $DB->PrepareUpdate("b_calendar_event", $fields)
+            . " WHERE ID=" . (int)$event['ID'] . "; ";
+        $DB->Query($strSql);
+
+
+        CTimeZone::Enable();
+    }
+
+    private static function GetByID($ID)
+    {
+        global $DB;
+        $strSql = "SELECT * FROM `b_calendar_event` WHERE `ID` = 4161";
+        $res = $DB->Query($strSql, false, "Ошибка");
+
+        $arResult = [];
+        while ($record = $res->fetch()){
+            $arResult[]=$record;
+        }
+        return $arResult;
+    }
 	public function editEntryAction()
 	{
 		$response = [];
 		$request = $this->getRequest();
+
+        /* echo "<pre>";
+            print_r($request->getPostList());
+        echo "</pre>";
+        die(); */
 
 		$id = (int)$request['id'];
 		$sectionId = (int)$request['section'];
@@ -640,6 +683,13 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		// Default name for events
 		$name = trim($request['name']);
 		$fio = trim($request['fio']);
+
+        $serviceName = trim($request['serviceName']);
+        $serviceDuration = trim($request['serviceDuration']);
+        $serviceRegion = trim($request['serviceRegion']);
+        $servicePrice = trim($request['servicePrice']);
+        $serviceDoctor = trim($request['serviceDoctor']);
+
 		$phone = trim($request['phone']);
 		if (empty($name))
 		{
@@ -717,7 +767,20 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     }
                 }
             }
-        } 
+        }
+
+        $oldCacheTime = \CCalendar::CacheTime();
+        \CCalendar::CacheTime(0);
+
+        $event = self::GetById($id);
+        echo "<pre>";
+            print_r($event);
+        echo "</pre>";
+
+        \CCalendar::CacheTime($oldCacheTime);
+        unset($oldCacheTime);
+        die();
+        self::updateEventFields();
 
 		$entryFields = [
 			'ID' => $id,
@@ -728,6 +791,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 			'TZ_TO' => $tzTo,
 			'NAME' => $name.$str_to_event_name,
 			'FIO' => $fio,
+            'artmax_serviceRegion' => 100,
+            'SERVICEREGION' => $serviceRegion,
 			'PHONE' => $phone,
 			'DESCRIPTION' => trim($request['desc']),
 			'SECTIONS' => [$sectionId],

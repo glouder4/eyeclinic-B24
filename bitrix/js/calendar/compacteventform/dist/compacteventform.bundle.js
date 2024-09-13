@@ -910,7 +910,7 @@ this.BX = this.BX || {};
 				onsuccess: function(data) { // в случаи успеха, выполняем действия
 					if(data.hasOwnProperty('regions')){
 						let regions = `
-						<option value="0">--Не выбрано--</option>
+						<option value="-1">--Не выбрано--</option>
 					  `;
 						for(let key in data.regions){
 							let region = data.regions[key];
@@ -922,12 +922,12 @@ this.BX = this.BX || {};
 					}
 					if(data.hasOwnProperty('services')){
 						let services = `
-						<option value="0">--Не выбрано--</option>
+						<option value="-1">--Не выбрано--</option>
 					  `;
 						for(let key in data.services){
 							let service = data.services[key];
 							services += `
-								<option value="${key}">${service['name']}</option>
+								<option value="${service['name']}">${service['name']}</option>
 							  `;
 						}
 						_this.BX("custom-service-selector").innerHTML = services;
@@ -1550,10 +1550,22 @@ this.BX = this.BX || {};
 	    if (!this.isNewEntry() && entry.isRecursive() && !options.confirmed && this.getFormDataChanges().includes('section')) {
 	      options.recursionMode = entry.isFirstInstance() ? 'all' : 'next';
 	    }
-	    console.log("this.DOM "+this);
-	    console.log(this.DOM.titleInput.value);
-	    console.log(this.DOM.phoneInput.value);
-	    console.log(this.DOM.fioInput.value);
+	    console.log("this.DOM ");
+		  console.log(this.DOM);
+		  // Услуга - serviceNameInput.value;
+		  // Длительность - serviceDurationInput.value;
+		  // Регион - serviceRegionInput.value;
+		  // Цена - servicePriceInput.value;
+		  // Врач - serviceDoctorInput.value;
+
+		  console.log('price')
+		  console.log(this.DOM.servicePriceInput.querySelector('input[type="number"]'));
+		  console.log(this.DOM.servicePriceInput.querySelector('input[type="number"]').value)
+
+
+		  //console.log(this.DOM.titleInput.value);
+	    //console.log(this.DOM.phoneInput.value);
+	    //console.log(this.DOM.fioInput.value);
 	    const dateTime = this.dateTimeControl.getValue();
 	    const data = {
 	      id: entry.id,
@@ -1561,6 +1573,11 @@ this.BX = this.BX || {};
 	      name: this.DOM.titleInput.value + " "+this.DOM.fioInput.value + " "+ this.DOM.phoneInput.value,
 	      phone: this.DOM.phoneInput.value,
 	      fio: this.DOM.fioInput.value,
+			serviceName: this.DOM.serviceNameInput.value,
+			serviceDuration: this.DOM.serviceDurationInput.value,
+			serviceRegion: this.DOM.serviceRegionInput.value,
+			servicePrice: this.DOM.servicePriceInput.querySelector('input[type="number"]').value,
+			serviceDoctor: this.DOM.serviceDoctorInput.value,
 	      desc: entry.getDescription(),
 	      reminder: this.remindersControl.getSelectedValues(),
 	      date_from: dateTime.fromDate,
@@ -1613,6 +1630,11 @@ this.BX = this.BX || {};
 	    }
 	    this.state = this.STATE.REQUEST;
 	    this.freezePopup();
+
+		  // Тут передавать данные на сохранение
+		  data.g4_fields = 'qqq';
+
+
 	    this.BX.ajax.runAction('calendar.api.calendarentryajax.editEntry', {
 	      data: data,
 	      analyticsLabel: {

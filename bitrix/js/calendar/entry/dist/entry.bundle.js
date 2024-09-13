@@ -574,6 +574,8 @@ this.BX = this.BX || {};
 
 	class Entry {
 	  constructor(options = {}) {
+		  console.log('ИЩИ ENTRY ТУТ')
+		  console.log(options)
 	    this.FULL_DAY_LENGTH = 86400;
 	    this.prepareData(options.data);
 	    this.parts = [];
