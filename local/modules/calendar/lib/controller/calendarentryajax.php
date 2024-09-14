@@ -600,6 +600,47 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         }
         return $arResult;
     }
+    private static function GetHasManyCRMElementsByEventID($EVENT_ID)
+    {
+        global $DB;
+        $strSql = "SELECT * FROM `b_utm_calendar_event` WHERE `VALUE_ID` = $EVENT_ID";
+        $res = $DB->Query($strSql, false, "Ошибка");
+
+        $arResult = [];
+        while ($record = $res->fetch()){
+            $arResult[]=$record;
+        }
+        return $arResult;
+    }
+    private static function createEventLead($title,$service_region,$phone,$userId,$sum) //OPPORTUNITY_WITH_CURRENCY
+    {
+        $oLead = new \CCrmLead(false);
+        $arFields = array(
+            "TITLE" => $title." ".$phone,
+            "NAME" => $title,
+            "STATUS_ID" => 'NEW',
+            "OPENED" => "Y",
+            "COMMENTS" => "",
+            "OPPORTUNITY" => $sum,
+            "STATUS_SEMANTIC_ID" => "P",
+            "COMPANY_TITLE" => "",
+            "UF_CRM_1678096558" => $service_region, // Регион
+            "SOURCE_ID" => "SELF",
+            "FM" => Array(
+                'PHONE' => array(
+                    'n0' => array(
+                        'VALUE' => $phone,
+                        'VALUE_TYPE' => 'WORK'
+                    )
+                ) ,
+            ) ,
+        );
+        $LEAD_ID = $oLead->Add($arFields, true, array(
+            'CURRENT_USER' => $userId
+        ));
+
+        return $LEAD_ID;
+    }
 	public function editEntryAction()
 	{
 		$response = [];
@@ -735,6 +776,11 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             }
         }
 
+        $event = self::GetById($id);
+        if(isset($event[0])) $event = $event[0];
+        $crm_elements = self::GetHasManyCRMElementsByEventID($id);
+        $has_lead = false;
+
         $str_to_event_name = "";
         foreach ($artMaxUFFields as $field => $value){
             if( $field === 'UF_CRM_CAL_EVENT' ){
@@ -742,6 +788,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     $lead_id = explode('_', $contact_code);
                     if( $lead_id[0] == 'L' ){
                         $lead_fields = \CCrmLead::GetByID($lead_id[1], false);
+                        $event['artmax_lead_id'] = $lead_id[1];
+                        $has_lead = true;
 
                         if( $lead_fields['CONTACT_ID'] != "" && $lead_fields['CONTACT_ID'] != false ){
                             $c_fields = \CCrmContact::GetByID($lead_fields['CONTACT_ID'], false);
@@ -767,21 +815,60 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             }
         }
 
-        $oldCacheTime = \CCalendar::CacheTime();
-        \CCalendar::CacheTime(0);
+        // Userfields for event
+        $arUFFields = [];
+        foreach($request as $field => $value)
+        {
+            if (mb_strpos($field, 'UF_') === 0)
+            {
+                $arUFFields[$field] = $value;
+            }
+        }
 
-        $event = self::GetById($id);
-        if(isset($event[0])) $event = $event[0];
+        if( $event['artmax_lead_id'] == null && $has_lead == false ){
+            $new_lead = self::createEventLead($fio,$serviceRegion,$phone,$userId,$servicePrice);
+            $field_value = 'a:1:{i:0;s:6:\"L_'.$new_lead.'\";}';
 
-        \CCalendar::CacheTime($oldCacheTime);
-        unset($oldCacheTime);
-        self::updateEventFields($event,[
-            'artmax_serviceName' => $serviceName,
-            'artmax_serviceDuration' => $serviceDuration,
-            'artmax_servicePrice' => $servicePrice,
-            'artmax_serviceRegion' => (int)$serviceRegion,
-            'artmax_serviceDoctor' => (int)$serviceDoctor,
-        ]);
+           /* global $DB;
+            $strSql = 'UPDATE `b_uts_calendar_event` SET `UF_CRM_CAL_EVENT` = "'.$field_value.'" WHERE `VALUE_ID` = '.$id;
+            $DB->Query($strSql, false, "Ошибка"); */
+
+            $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_".$new_lead;
+
+             self::updateEventFields($event,[
+                //'UF_CRM_CAL_EVENT' => 'L_'.$new_lead,//'a:1:{i:0;s:6:"L_'.$new_lead.'";}',
+                 'artmax_lead_id' => $new_lead,
+             ]);
+        }
+        else if($has_lead == false && $event['artmax_lead_id'] != null){
+            $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_".$event['artmax_lead_id'];
+        }
+
+        if( $serviceName != "" ){
+            self::updateEventFields($event,[
+                'artmax_serviceName' => $serviceName
+            ]);
+        }
+        if( $serviceDuration != "" ){
+            self::updateEventFields($event,[
+                'artmax_serviceDuration' => $serviceDuration,
+            ]);
+        }
+        if( $servicePrice != "" ){
+            self::updateEventFields($event,[
+                'artmax_servicePrice' => $servicePrice,
+            ]);
+        }
+        if( $serviceRegion != "" ){
+            self::updateEventFields($event,[
+                'artmax_serviceRegion' => (int)$serviceRegion,
+            ]);
+        }
+        if( $serviceDoctor != "" ){
+            self::updateEventFields($event,[
+                'artmax_serviceDoctor' => (int)$serviceDoctor,
+            ]);
+        }
 
 		$entryFields = [
 			'ID' => $id,
@@ -904,16 +991,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 				$response['busyUsersList'] = \CCalendarEvent::getUsersDetails($busyUsers);
 				$busyUserName = current($response['busyUsersList'])['DISPLAY_NAME'];
 				$this->addError(new Error(Loc::getMessage('EC_USER_BUSY', ['#USER#' => $busyUserName]), 'edit_entry_user_busy'));
-			}
-		}
-
-		// Userfields for event
-		$arUFFields = [];
-		foreach($request as $field => $value)
-		{
-			if (mb_strpos($field, 'UF_') === 0)
-			{
-				$arUFFields[$field] = $value;
 			}
 		}
 

@@ -975,10 +975,14 @@ this.BX = this.BX || {};
 						_this.BX("custom-doctor-selector").innerHTML = doctors;
 					}
 					if(data.hasOwnProperty('event_service_duration')){
-						_this.DOM.serviceDurationInput.querySelector('option[value="'+data['event_service_duration']+'"]').setAttribute("selected", "selected");
+						if( data['event_service_duration'] != "" ){
+							_this.DOM.serviceDurationInput.querySelector('option[value="'+data['event_service_duration']+'"]').setAttribute("selected", "selected");
+						}
 					}
 					if(data.hasOwnProperty('event_service_price')){
-						_this.DOM.servicePriceInput.querySelector('input[type="number"]').value = data['event_service_price'];
+						if( data['event_service_price'] != "" ){
+							_this.DOM.servicePriceInput.querySelector('input[type="number"]').value = data['event_service_price'];
+						}
 					}
 				}
 			});
