@@ -616,6 +616,13 @@ this.BX = this.BX || {};
 	      this.DOM.fioInput.title = '';
 	    }
 	}
+		updateArtMaxInputTitle() {
+			if (this.isFioOverflowing()) {
+				this.DOM.fioInput.title = this.DOM.fioInput.value;
+			} else {
+				this.DOM.fioInput.title = '';
+			}
+		}
 	  isFioOverflowing() {
 	    const el = this.DOM.fioInput;
 	    return el.clientWidth < el.scrollWidth || el.clientHeight < el.scrollHeight;
@@ -836,10 +843,10 @@ this.BX = this.BX || {};
 	  getServiceNameControl(){
 		  this.DOM.serviceNameInput = main_core.Tag.render(_t34 || (_t34 = _`<select id="custom-service-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
 			this.bindFade();
-			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+			main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.serviceNameInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.updateArtMaxInputTitle().bind(this));
+			//main_core.Event.bind(this.DOM.serviceNameInput, 'change', this.updateArtMaxInputTitle.bind(this));
 
 			return this.DOM.serviceNameInput;
 		}
@@ -860,20 +867,20 @@ this.BX = this.BX || {};
 					<option value="90m">90 мин</option>
 				</select>`));
 			this.bindFade();
-			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+			main_core.Event.bind(this.DOM.serviceDurationInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.serviceDurationInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
 
 			return this.DOM.serviceDurationInput;
 		}
 		getServiceRegionControl(){
 			this.DOM.serviceRegionInput = main_core.Tag.render(_t36 || (_t36 = _`<select id="custom-service-region-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
 			this.bindFade();
-			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+			main_core.Event.bind(this.DOM.serviceRegionInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.serviceRegionInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
 
 			return this.DOM.serviceRegionInput;
 		}
@@ -890,10 +897,10 @@ this.BX = this.BX || {};
 				</div>
 			`));
 			this.bindFade();
-			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+			main_core.Event.bind(this.DOM.servicePriceInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.servicePriceInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
 
 			return this.DOM.servicePriceInput;
 		}
@@ -903,9 +910,11 @@ this.BX = this.BX || {};
 			this.bindFade();
 
 			let _this = this;
+			//console.log(_this.entry)
 			this.BX.ajax({
 				url: '/local/embedding/get-deal-fields.php',
-				method: 'GET',
+				method: 'POST',
+				data: {'event_id': _this.entry.id},
 				dataType: 'json', // тип передаваемых данных
 				onsuccess: function(data) { // в случаи успеха, выполняем действия
 					if(data.hasOwnProperty('regions')){
@@ -914,9 +923,16 @@ this.BX = this.BX || {};
 					  `;
 						for(let key in data.regions){
 							let region = data.regions[key];
-							regions += `
-								<option value="${region['ID']}">${region['VALUE']}</option>
-							  `;
+							if( region.hasOwnProperty('selected') && region.selected == true ){
+								regions += `
+									<option value="${region['ID']}" selected>${region['VALUE']}</option>
+								  `;
+							}
+							else{
+								regions += `
+									<option value="${region['ID']}">${region['VALUE']}</option>
+								  `;
+							}
 						}
 						_this.BX("custom-service-region-selector").innerHTML = regions;
 					}
@@ -926,9 +942,16 @@ this.BX = this.BX || {};
 					  `;
 						for(let key in data.services){
 							let service = data.services[key];
-							services += `
-								<option value="${service['name']}">${service['name']}</option>
-							  `;
+							if( service.hasOwnProperty('selected') && service.selected == true ){
+								services += `
+									<option value="${service['name']}" selected>${service['name']}</option>
+								  `;
+							}
+							else{
+								services += `
+									<option value="${service['name']}">${service['name']}</option>
+								  `;
+							}
 						}
 						_this.BX("custom-service-selector").innerHTML = services;
 					}
@@ -938,19 +961,32 @@ this.BX = this.BX || {};
 					  `;
 						for(let key in data.doctors){
 							let doctor = data.doctors[key];
-							doctors += `
-								<option value="${doctor['ID']}">${doctor['VALUE']}</option>
-							  `;
+							if( doctor.hasOwnProperty('selected') && doctor.selected == true ){
+								doctors += `
+									<option value="${doctor['ID']}" selected>${doctor['VALUE']}</option>
+								  `;
+							}
+							else{
+								doctors += `
+									<option value="${doctor['ID']}">${doctor['VALUE']}</option>
+								  `;
+							}
 						}
 						_this.BX("custom-doctor-selector").innerHTML = doctors;
+					}
+					if(data.hasOwnProperty('event_service_duration')){
+						_this.DOM.serviceDurationInput.querySelector('option[value="'+data['event_service_duration']+'"]').setAttribute("selected", "selected");
+					}
+					if(data.hasOwnProperty('event_service_price')){
+						_this.DOM.servicePriceInput.querySelector('input[type="number"]').value = data['event_service_price'];
 					}
 				}
 			});
 
-			/*main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
 			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));*/
+			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
 
 			return this.DOM.serviceDoctorInput;
 		}

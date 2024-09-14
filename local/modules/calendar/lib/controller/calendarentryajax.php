@@ -579,21 +579,19 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             return;
         }
 
-        CTimeZone::Disable();
-
         $strSql = "UPDATE b_calendar_event SET ".
             $DB->PrepareUpdate("b_calendar_event", $fields)
             . " WHERE ID=" . (int)$event['ID'] . "; ";
         $DB->Query($strSql);
 
 
-        CTimeZone::Enable();
+        \CTimeZone::Enable();
     }
 
     private static function GetByID($ID)
     {
         global $DB;
-        $strSql = "SELECT * FROM `b_calendar_event` WHERE `ID` = 4161";
+        $strSql = "SELECT * FROM `b_calendar_event` WHERE `ID` = $ID";
         $res = $DB->Query($strSql, false, "Ошибка");
 
         $arResult = [];
@@ -773,14 +771,17 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         \CCalendar::CacheTime(0);
 
         $event = self::GetById($id);
-        echo "<pre>";
-            print_r($event);
-        echo "</pre>";
+        if(isset($event[0])) $event = $event[0];
 
         \CCalendar::CacheTime($oldCacheTime);
         unset($oldCacheTime);
-        die();
-        self::updateEventFields();
+        self::updateEventFields($event,[
+            'artmax_serviceName' => $serviceName,
+            'artmax_serviceDuration' => $serviceDuration,
+            'artmax_servicePrice' => $servicePrice,
+            'artmax_serviceRegion' => (int)$serviceRegion,
+            'artmax_serviceDoctor' => (int)$serviceDoctor,
+        ]);
 
 		$entryFields = [
 			'ID' => $id,
