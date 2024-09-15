@@ -25,6 +25,8 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             die(); */
             $fieldsInfo = \CCrmDeal::GetFieldsInfo();
 
+            $LeadFieldsInfo = \CCrmLead::GetFieldsInfo();
+
             foreach ($fieldsInfo as $code => &$field)
             {
                 $field['CAPTION'] = \CCrmDeal::GetFieldCaption($code);
@@ -36,12 +38,47 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             );
             $userType->PrepareFieldsInfo($fieldsInfo);
 
-            $regions = $fieldsInfo['UF_CRM_6405B9B55548C']['ITEMS'];
+            $typesID = array_keys( \CCrmFieldMulti::GetEntityTypeInfos() );
+            foreach($typesID as $typeID)
+            {
+                $LeadFieldsInfo[$typeID] = [
+                    'TYPE' => 'crm_multifield',
+                    'ATTRIBUTES' => [\CCrmFieldInfoAttr::Multiple]
+                ];
+            }
+
+            foreach ($LeadFieldsInfo as $code => &$field)
+            {
+                $field['CAPTION'] = \CCrmLead::GetFieldCaption($code);
+            }
+
+            $userType = new \CCrmUserType(
+                $USER_FIELD_MANAGER,
+                \CCrmLead::$sUFEntityID
+            );
+            $userType->PrepareFieldsInfo($LeadFieldsInfo);
+
+            $regions = $LeadFieldsInfo['UF_CRM_1678096558']['ITEMS'];
             $doctors = $fieldsInfo['UF_CRM_1655488213455']['ITEMS'];
             $services = $fieldsInfo['UF_CRM_1590412209544']['SETTINGS']['SERVICE_LIST'];
 
+
             $event = null;
             if( isset($post_fields['event_id']) && $post_fields['event_id'] > 0 ){
+                function stripWhitespaces($string) {
+                    $old_string = $string;
+                    $string = strip_tags($string);
+                    $string = preg_replace('/([^\pL\pN\pP\pS\pZ])|([\xC2\xA0])/u', ' ', $string);
+                    $string = str_replace('  ',' ', $string);
+                    $string = trim($string);
+
+                    if ($string === $old_string) {
+                        return $string;
+                    } else {
+                        return stripWhitespaces($string);
+                    }
+                }
+
                 $event = GetEventByID($post_fields['event_id']);
                 if(isset($event[0])) $event = $event[0];
 
@@ -58,7 +95,7 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                     }
                 }
                 foreach ($services as $key => $service){
-                    if($event['artmax_serviceName'] == $service['name']){
+                    if( stripWhitespaces($event['artmax_serviceName']) == stripWhitespaces($service['name']) ){
                         $services[$key]['selected'] = true;
                         break;
                     }
@@ -76,6 +113,8 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             if( isset($post_fields['event_id']) && $post_fields['event_id'] > 0 ){
                 $response['event_service_duration'] = $event['artmax_serviceDuration'];
                 $response['event_service_price'] = $event['artmax_servicePrice'];
+                $response['fio'] = $event['FIO'];
+                $response['phone'] = $event['PHONE'];
             }
 
             echo json_encode($response);

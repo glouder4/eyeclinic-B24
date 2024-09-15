@@ -963,12 +963,12 @@ this.BX = this.BX || {};
 							let doctor = data.doctors[key];
 							if( doctor.hasOwnProperty('selected') && doctor.selected == true ){
 								doctors += `
-									<option value="${doctor['ID']}" selected>${doctor['VALUE']}</option>
+									<option value="${doctor['VALUE']}" selected>${doctor['VALUE']}</option>
 								  `;
 							}
 							else{
 								doctors += `
-									<option value="${doctor['ID']}">${doctor['VALUE']}</option>
+									<option value="${doctor['VALUE']}">${doctor['VALUE']}</option>
 								  `;
 							}
 						}
@@ -982,6 +982,16 @@ this.BX = this.BX || {};
 					if(data.hasOwnProperty('event_service_price')){
 						if( data['event_service_price'] != "" ){
 							_this.DOM.servicePriceInput.querySelector('input[type="number"]').value = data['event_service_price'];
+						}
+					}
+					if(data.hasOwnProperty('FIO')){
+						if( data['FIO'] != "" ){
+							_this.DOM.fioInput.value = data['FIO'];
+						}
+					}
+					if(data.hasOwnProperty('PHONE')){
+						if( data['PHONE'] != "" ){
+							_this.DOM.phoneInput.value = data['PHONE'];
 						}
 					}
 				}
