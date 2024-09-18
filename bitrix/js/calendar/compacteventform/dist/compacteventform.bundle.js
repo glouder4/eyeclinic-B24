@@ -1082,8 +1082,8 @@ this.BX = this.BX || {};
 				}
 			});
 
-			main_core.Event.bind(this.DOM.fioInput, 'keyup', this.checkForChangesDebounce);
-			main_core.Event.bind(this.DOM.fioInput, 'change', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.serviceDoctorInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.serviceDoctorInput, 'change', this.checkForChangesDebounce);
 			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
 			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
 
