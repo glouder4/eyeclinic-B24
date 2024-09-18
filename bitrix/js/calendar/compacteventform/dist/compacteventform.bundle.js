@@ -40,7 +40,9 @@ this.BX = this.BX || {};
 	  _t35,
 		_t36,
 		_t37,
-		_t38;
+		_t38,
+		_t39,
+		_t40;
 	class CompactEventForm extends main_core_events.EventEmitter {
 	  constructor(options = {}) {
 	    super();
@@ -249,6 +251,8 @@ this.BX = this.BX || {};
 							<label class="ui-entity-editor-block-title-text">Телефон</label>
 							${0}
 					  	</div>
+					  	
+					  	
 					  </div>
 					  <div id="event-fio-field">
 						<div class="ui-entity-editor-block-title">
@@ -288,11 +292,23 @@ this.BX = this.BX || {};
 						</div>
 					  </div>
 				  </div>
+				  <div id="contact-from-wrapper">
+					<div class="ui-entity-editor-block-title" id="contact-from-field-wrapper">
+						<label class="ui-entity-editor-block-title-text">Источник</label>
+							${0}
+					  </div>
+				  </div>
+				  <div id="comment-wrapper">
+				  	<div class="ui-entity-editor-block-title" id="comment-field-title-wrapper">
+						<label class="ui-entity-editor-block-title-text">Комментарий</label>
+						${0}
+					</div>
+				  </div>
 				</div>
 				</div>
 
 
-			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl(),this.getServiceDurationControl(),this.getServiceRegionControl(),this.getServicePriceControl(),this.getServiceDoctorControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
+			`), this.getEntryCounter(), this.getTitleControl(), this.getTitleFade(), this.getColorControl(), this.getPhoneControl(),this.getFIOControl(),this.getServiceNameControl(),this.getServiceDurationControl(),this.getServiceRegionControl(),this.getServicePriceControl(),this.getServiceDoctorControl(),this.getContactFromControl(),this.getCommentControl()), this.getSectionControl('textselect'), this.getDateTimeControl(), this.getUserPlannerSelector(), this.getTypeInfoControl(), this.getLocationControl(), this.DOM.remindersOuterWrap = main_core.Tag.render(_t3 || (_t3 = _`
 				<div class="calendar-field-block">
 					<div class="calendar-field-title">${0}:</div>
 					${0}
@@ -808,7 +824,7 @@ this.BX = this.BX || {};
 	  
 	getPhoneControl() {
 	    this.DOM.phoneInput = main_core.Tag.render(_t32 || (_t32 = _`
-			<input class="calendar-field calendar-field-string --text-overflow-none"
+			<input class="calendar-field calendar-field-string --text-overflow-none crm-entity-widget-content-input crm-entity-widget-content-input-phone"
 				value=""
 				placeholder="${0}"
 				type="text"
@@ -819,6 +835,15 @@ this.BX = this.BX || {};
 	    main_core.Event.bind(this.DOM.phoneInput, 'change', this.checkForChangesDebounce);
 	    main_core.Event.bind(this.DOM.phoneInput, 'keyup', this.updatePhoneInputTitle.bind(this));
 	    main_core.Event.bind(this.DOM.phoneInput, 'change', this.updatePhoneInputTitle.bind(this));
+
+		new BX.PhoneNumber.Input({
+			node: this.DOM.phoneInput,
+			defaultCountry: 'ru',
+			onChange: function(e) {
+				// вызывается при изменении значения
+			}
+		});
+
 
 	    return this.DOM.phoneInput;
 
@@ -840,7 +865,7 @@ this.BX = this.BX || {};
 	    return this.DOM.fioInput;
 
 	  }
-	  getServiceNameControl(){
+	    getServiceNameControl(){
 		  this.DOM.serviceNameInput = main_core.Tag.render(_t34 || (_t34 = _`<select id="custom-service-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
 			this.bindFade();
 			main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.checkForChangesDebounce);
@@ -850,6 +875,19 @@ this.BX = this.BX || {};
 
 			return this.DOM.serviceNameInput;
 		}
+
+		getContactFromControl(){
+		  //contactFromInput
+			this.DOM.contactFromInput = main_core.Tag.render(_t40 || (_t40 = _`<select id="contact-from-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
+			this.bindFade();
+			main_core.Event.bind(this.DOM.contactFromInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.contactFromInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.serviceNameInput, 'keyup', this.updateArtMaxInputTitle().bind(this));
+			//main_core.Event.bind(this.DOM.serviceNameInput, 'change', this.updateArtMaxInputTitle.bind(this));
+
+			return this.DOM.contactFromInput;
+		}
+
 
 		getServiceDurationControl(){
 			this.DOM.serviceDurationInput = main_core.Tag.render(_t35 || (_t35 = _`<select id="custom-service-duration-selector" class="calendar-field calendar-field-select --text-overflow-none">
@@ -905,11 +943,33 @@ this.BX = this.BX || {};
 			return this.DOM.servicePriceInput;
 		}
 
+		getCommentControl(){
+			this.DOM.commentInput = main_core.Tag.render(_t39 || (_t39 = _`
+				<div class="ui-entity-editor-content-block">
+					<span class="fields money field-wrap">
+						<span class="fields money field-item">
+							<div class="money-editor">
+								<textarea cols="30" rows="3" style="width: 100%; resize: none;"></textarea>
+							</div>
+						</span>
+					</span>
+				</div>
+			`));
+			this.bindFade();
+			main_core.Event.bind(this.DOM.commentInput, 'keyup', this.checkForChangesDebounce);
+			main_core.Event.bind(this.DOM.commentInput, 'change', this.checkForChangesDebounce);
+			//main_core.Event.bind(this.DOM.fioInput, 'keyup', this.updateFioInputTitle.bind(this));
+			//main_core.Event.bind(this.DOM.fioInput, 'change', this.updateFioInputTitle.bind(this));
+
+			return this.DOM.commentInput;
+		}
+
 		getServiceDoctorControl(){
 			this.DOM.serviceDoctorInput = main_core.Tag.render(_t38 || (_t38 = _`<select id="custom-doctor-selector" class="calendar-field calendar-field-select --text-overflow-none"></select>`));
 			this.bindFade();
 
 			let _this = this;
+
 			//console.log(_this.entry)
 			this.BX.ajax({
 				url: '/local/embedding/get-deal-fields.php',
@@ -974,14 +1034,39 @@ this.BX = this.BX || {};
 						}
 						_this.BX("custom-doctor-selector").innerHTML = doctors;
 					}
+
+					if( data.hasOwnProperty('contact_sources') ){
+						let contact_sources = `
+						<option value="-1">--Не выбрано--</option>
+					  `;
+						for(let key in data.contact_sources){
+							let contact_source = data.contact_sources[key];
+							if( contact_source.hasOwnProperty('selected') && contact_source.selected == true ){
+								contact_sources += `
+									<option value="${contact_source['ID']}" selected>${contact_source['VALUE']}</option>
+								  `;
+							}
+							else{
+								contact_sources += `
+									<option value="${contact_source['ID']}">${contact_source['VALUE']}</option>
+								  `;
+							}
+						}
+						_this.BX("contact-from-selector").innerHTML = contact_sources;
+					}
 					if(data.hasOwnProperty('event_service_duration')){
-						if( data['event_service_duration'] != "" ){
+						if( data['event_service_duration'] != "" && data['event_service_duration'] != null ){
 							_this.DOM.serviceDurationInput.querySelector('option[value="'+data['event_service_duration']+'"]').setAttribute("selected", "selected");
 						}
 					}
 					if(data.hasOwnProperty('event_service_price')){
 						if( data['event_service_price'] != "" ){
 							_this.DOM.servicePriceInput.querySelector('input[type="number"]').value = data['event_service_price'];
+						}
+					}
+					if(data.hasOwnProperty('event_service_comment')){
+						if( data['event_service_comment'] != "" ){
+							_this.DOM.commentInput.querySelector('textarea').value = data['event_service_comment'];
 						}
 					}
 					if(data.hasOwnProperty('FIO')){
@@ -1627,7 +1712,9 @@ this.BX = this.BX || {};
 			serviceDuration: this.DOM.serviceDurationInput.value,
 			serviceRegion: this.DOM.serviceRegionInput.value,
 			servicePrice: this.DOM.servicePriceInput.querySelector('input[type="number"]').value,
+			serviceComment: this.DOM.commentInput.querySelector('textarea').value,
 			serviceDoctor: this.DOM.serviceDoctorInput.value,
+			contactFrom: this.DOM.contactFromInput.value,
 	      desc: entry.getDescription(),
 	      reminder: this.remindersControl.getSelectedValues(),
 	      date_from: dateTime.fromDate,

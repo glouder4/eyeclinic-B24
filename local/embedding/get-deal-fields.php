@@ -27,6 +27,8 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
 
             $LeadFieldsInfo = \CCrmLead::GetFieldsInfo();
 
+            $ContactFieldsInfo = \CCrmContact::GetFieldsInfo();
+
             foreach ($fieldsInfo as $code => &$field)
             {
                 $field['CAPTION'] = \CCrmDeal::GetFieldCaption($code);
@@ -37,6 +39,8 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                 \CCrmDeal::$sUFEntityID
             );
             $userType->PrepareFieldsInfo($fieldsInfo);
+
+
 
             $typesID = array_keys( \CCrmFieldMulti::GetEntityTypeInfos() );
             foreach($typesID as $typeID)
@@ -58,9 +62,36 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             );
             $userType->PrepareFieldsInfo($LeadFieldsInfo);
 
+
+
+            // Контакт
+            $typesID = array_keys( \CCrmFieldMulti::GetEntityTypeInfos() );
+            foreach($typesID as $typeID)
+            {
+                $ContactFieldsInfo[$typeID] = [
+                    'TYPE' => 'crm_multifield',
+                    'ATTRIBUTES' => [\CCrmFieldInfoAttr::Multiple]
+                ];
+            }
+
+            foreach ($ContactFieldsInfo as $code => &$field)
+            {
+                $field['CAPTION'] = \CCrmLead::GetFieldCaption($code);
+            }
+
+            $userType = new \CCrmUserType(
+                $USER_FIELD_MANAGER,
+                \CCrmLead::$sUFEntityID
+            );
+            $userType->PrepareFieldsInfo($ContactFieldsInfo);
+
+
+
+
             $regions = $LeadFieldsInfo['UF_CRM_1678096558']['ITEMS'];
             $doctors = $fieldsInfo['UF_CRM_1655488213455']['ITEMS'];
             $services = $fieldsInfo['UF_CRM_1590412209544']['SETTINGS']['SERVICE_LIST'];
+            $contactsFrom = $ContactFieldsInfo['UF_CRM_1723449198981']['ITEMS'];
 
 
             $event = null;
@@ -88,8 +119,9 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                         break;
                     }
                 }
+
                 foreach ($doctors as $key => $doctor){
-                    if($event['artmax_serviceDoctor'] == $doctor['ID']){
+                    if( stripWhitespaces($event['artmax_serviceDoctor']) == stripWhitespaces($doctor['VALUE']) ){
                         $doctors[$key]['selected'] = true;
                         break;
                     }
@@ -97,6 +129,12 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                 foreach ($services as $key => $service){
                     if( stripWhitespaces($event['artmax_serviceName']) == stripWhitespaces($service['name']) ){
                         $services[$key]['selected'] = true;
+                        break;
+                    }
+                }
+                foreach ($contactsFrom as $key => $contactsFro){
+                    if($event['contact_source'] == $contactsFro['ID']){
+                        $contactsFrom[$key]['selected'] = true;
                         break;
                     }
                 }
@@ -108,11 +146,13 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             $response = [
                 'regions' => $regions,
                 'doctors' => $doctors,
-                'services' => $services
+                'services' => $services,
+                'contact_sources' => $contactsFrom
             ];
             if( isset($post_fields['event_id']) && $post_fields['event_id'] > 0 ){
                 $response['event_service_duration'] = $event['artmax_serviceDuration'];
                 $response['event_service_price'] = $event['artmax_servicePrice'];
+                $response['event_service_comment'] = $event['artmax_comment'];
                 $response['fio'] = $event['FIO'];
                 $response['phone'] = $event['PHONE'];
             }

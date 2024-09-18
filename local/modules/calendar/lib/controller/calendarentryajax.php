@@ -579,10 +579,12 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         {
             return;
         }
+        \CTimeZone::Disable();
 
         $strSql = "UPDATE b_calendar_event SET ".
             $DB->PrepareUpdate("b_calendar_event", $fields)
             . " WHERE ID=" . (int)$event['ID'] . "; ";
+
         $DB->Query($strSql);
 
 
@@ -620,30 +622,18 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
     {
         global $DB;
 
-        $updateList = "";
-        if( isset($params['serviceName']) ){
-            $updateList .= "`SERVICE_NAME` = '".$params['serviceName']."', ";
+        if (!$params)
+        {
+            return;
         }
-        if( isset($params['dateFrom']) && isset($params['timeFrom']) ){
-            $dateExplode = explode('.',$params['dateFrom']);
-            $day = $dateExplode[0];
-            $month = $dateExplode[1];
-            $year = explode(' ',$dateExplode[2])[0];
-            $dateString = $year.'-'.$month.'-'.$day.' '.$params['timeFrom'].':00';
 
-            $updateList .= "`DATE_FROM` = '".$dateString."', ";
-        }
-        if( isset($params['dateTo']) && isset($params['timeTo']) ){
-            $dateExplode = explode('.',$params['dateTo']);
-            $day = $dateExplode[0];
-            $month = $dateExplode[1];
-            $year = explode(' ',$dateExplode[2])[0];
-            $dateString = $year.'-'.$month.'-'.$day.' '.$params['timeTo'].':00';
-            $updateList .= "`DATE_TO` = '".$dateString."' ";
-        }
-        $strSql = "UPDATE `b_calendar_resource` SET ".$updateList." WHERE `ID` = $id";
+        $strSql = "UPDATE b_calendar_resource SET ".
+            $DB->PrepareUpdate("b_calendar_resource", $params)
+            . " WHERE ID=" . (int)$id . "; ";
+        $DB->Query($strSql);
 
-        $res = $DB->Query($strSql, false, "Ошибка");
+
+        \CTimeZone::Enable();
     }
     private function getBookingResource($parent_id)
     {
@@ -658,7 +648,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         }
         return $arResult;
     }
-    private function createDeal($title,$price,$contactId,$doctor)
+    private function createDeal($title,$price,$contactId,$doctor,$lead_id)
     {
         $entityFields = [
             'TITLE'    => 'Сделка: '.$title,
@@ -669,6 +659,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             'CONTACT_IDS' => [
                 $contactId,
             ],
+            "LEAD_ID" => $lead_id,
             "UF_CRM_1590412209544" => [83],
             "UF_CRM_1655488213455" => $doctor,
             'OPENED' => 'Y',
@@ -754,19 +745,20 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
         return $contactId;
     }
-    private static function createEventLead($title,$service_region,$phone,$userId,$sum,$contactId) //OPPORTUNITY_WITH_CURRENCY
+    private static function createEventLead($title,$service_region,$contactFrom,$phone,$userId,$sum,$contactId) //OPPORTUNITY_WITH_CURRENCY
     {
         $oLead = new \CCrmLead(false);
         $arFields = array(
             "TITLE" => $title." ".$phone,
             "NAME" => $title,
-            "STATUS_ID" => 'NEW',
+            "STATUS_ID" => 'CONVERTED',
             "OPENED" => "Y",
             "COMMENTS" => "",
             "OPPORTUNITY" => $sum,
-            "STATUS_SEMANTIC_ID" => "P",
+            "STATUS_SEMANTIC_ID" => "S",
             "COMPANY_TITLE" => "",
             "UF_CRM_1678096558" => [$service_region], // Регион
+            "UF_CRM_1723449198981" => $contactFrom,
             "SOURCE_ID" => "SELF",
             "CONTACT_ID" => $contactId,
             "FM" => Array(
@@ -871,6 +863,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         $serviceRegion = trim($request['serviceRegion']);
         $servicePrice = trim($request['servicePrice']);
         $serviceDoctor = trim($request['serviceDoctor']);
+        $serviceComment = trim($request['serviceComment']);
+        $contactFrom = trim($request['contactFrom']);
 
 		$phone = trim($request['phone']);
 		if (empty($name))
@@ -883,7 +877,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 		// Date & Time
 		$dateFrom = $request['date_from'];
-		$dateTo = $request['date_to'];
+        $dateTo = $request['date_to'];
 		$skipTime = isset($request['skip_time']) && $request['skip_time'] === 'Y';
 		if (!$skipTime)
 		{
@@ -892,6 +886,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		}
 		$dateFrom = trim($dateFrom);
 		$dateTo = trim($dateTo);
+
 
 		// Timezone
 		$tzFrom = $request['tz_from'];
@@ -927,10 +922,10 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 			'SKIP_TIME' => $skipTime,
 			'TZ_FROM' => $tzFrom,
 			'TZ_TO' => $tzTo,
-			'NAME' => "",
+			'NAME' => ($name != "") ? $name : "Пустое событие",
 			'FIO' => $fio,
 			'PHONE' => $phone,
-			'DESCRIPTION' => trim($request['desc']),
+			//'DESCRIPTION' => trim($request['desc']),
 			'SECTIONS' => [$sectionId],
 			'COLOR' => $request['color'],
 			'ACCESSIBILITY' => $request['accessibility'],
@@ -1046,6 +1041,50 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		{
 			return $response;
 		}
+
+        // Userfields for event
+        $arUFFields = [];
+        foreach ($request as $field => $value) {
+            if (mb_strpos($field, 'UF_') === 0) {
+                $arUFFields[$field] = $value;
+            }
+        }
+
+        $timeZone = new \DateTimeZone('Asia/Yekaterinburg'); //Asia/Yekaterinburg
+        $objDateTimeFrom = new \DateTime($dateFrom, $timeZone);
+        $objDateTimeTo = new \DateTime($dateTo, $timeZone);
+
+        echo "<pre>";
+            print_r($objDateTimeFrom);
+        echo "</pre>";
+
+        if($entryFields['ID'] != 0){
+            $event = self::GetById($entryFields['ID']);
+
+            if (isset($event[0])) {
+                $event = $event[0];
+
+                if (
+                    $name != "" &&
+                    ($event['artmax_defaultName'] == "" || $event['artmax_defaultName'] == null) &&
+                    $event['DATE_FROM'] != "" &&
+                    $event['DATE_TO'] != "" &&
+                    ($event['artmax_defaultDateFrom'] == "" || $event['artmax_defaultDateFrom'] == null) &&
+                    ($event['artmax_defaultDateTo'] == "" || $event['artmax_defaultDateTo'] == null) &&
+                    ($event['default_fields'] == "" || $event['default_fields'] == null)
+                ) {
+                    //Сохраняем поля по умолчанию
+                    self::updateEventFields($event, [
+                        'artmax_defaultName' => $name,
+                        'artmax_defaultDateFrom' => $event['DATE_FROM'],
+                        'artmax_defaultDateTo' => $event['DATE_TO'],
+                        'default_fields' => json_encode([
+                            'arFields' => $entryFields,
+                        ])
+                    ]);
+                }
+            }
+        }
 
 		$newId = false;
 		try
@@ -1197,234 +1236,26 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		UserSettings::set($userSettings, $userId);
 
         if ($newId && empty($errors)) {
-
             $event = self::GetById($newId);
-
             if (isset($event[0])) {
                 $event = $event[0];
 
-                $has_lead = false;
-
-                $str_to_event_name = "Событие:";
-                foreach ($artMaxUFFields as $field => $value) {
-                    if ($field === 'UF_CRM_CAL_EVENT') {
-                        foreach ($value as $contact_code) {
-                            $lead_id = explode('_', $contact_code);
-                            if ($lead_id[0] == 'L') {
-                                $lead_fields = \CCrmLead::GetByID($lead_id[1], false);
-                                $event['artmax_lead_id'] = $lead_id[1];
-                                $has_lead = true;
-
-                                if ($lead_fields['CONTACT_ID'] != "" && $lead_fields['CONTACT_ID'] != false) {
-                                    $c_fields = \CCrmContact::GetByID($lead_fields['CONTACT_ID'], false);
-                                    $dbCont = \CCrmFieldMulti::GetList(
-                                        array('ID' => 'asc'), //сортировка
-                                        array(
-                                            'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
-                                            'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
-                                            'TYPE_ID' => "PHONE",
-                                        ) //фильтр
-                                    );
-                                    if ($arCont = $dbCont->Fetch()) {
-                                        //$arCont["VALUE"] там значение
-
-                                        $contact_phone = $arCont['VALUE'];
-                                        $contact_full_name = $c_fields['FULL_NAME'];
-
-                                        $str_to_event_name .= " " . $contact_full_name . " " . $contact_phone;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Userfields for event
-                $arUFFields = [];
-                foreach ($request as $field => $value) {
-                    if (mb_strpos($field, 'UF_') === 0) {
-                        $arUFFields[$field] = $value;
-                    }
-                }
-
-
-                if ($event['artmax_lead_id'] == null && $has_lead == false) {
-                    $contactId = self::createLeadContact($userId,$fio,$phone);
-                    $new_lead = self::createEventLead($fio, $serviceRegion, $phone, $userId, $servicePrice,$contactId);
-                    $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $new_lead;
-
-                    self::updateEventFields($event, [
-                        'artmax_lead_id' => $new_lead,
-                    ]);
-
-                    $dealId = self::createDeal($fio." ".$phone,$servicePrice,$contactId,$serviceDoctor);
-                    self::updateEventFields($event, [
-                        'artmax_deal_id' => $dealId
-                    ]);
-
-                    $resource_id = self::getBookingResource($dealId)[0]['ID'];
-
-
-                    self::updateBookingResource($resource_id,[
-                        'serviceName' => $serviceName,
-                        'dateFrom' => $dateFrom,
-                        'dateTo' => $dateTo,
-                        'timeFrom' => $request['time_from'],
-                        'timeTo' => $request['time_to'],
-                    ]);
-                } else if ($has_lead == false && $event['artmax_lead_id'] != null) {
-                    $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $event['artmax_lead_id'];
-                    $lead_fields = \CCrmLead::GetByID($event['artmax_lead_id'], false);
-
-                    $leadEntity = new \CCrmLead(true);
-
-                    if (isset($lead_fields['ID'])) {
-                        $lead_title = "Лид #" . $event['artmax_lead_id'];
-                        if ($fio != "" && $phone != "") {
-                            $lead_title = $fio . " " . $phone;
-                        }
-
-
-                        $arFields = array(
-                            "TITLE" => "Лид " . $lead_title,
-                            "NAME" => $lead_title,
-                            "OPPORTUNITY" => $servicePrice,
-                            "UF_CRM_1678096558" => [$serviceRegion]
-                        );
-
-                        if ($event['PHONE'] != $phone) {
-                            $dbCont = \CCrmFieldMulti::GetList(
-                                array('ID' => 'asc'), //сортировка
-                                array(
-                                    'ELEMENT_ID' => $lead_fields['ID'],
-                                    'ENTITY_ID' => "LEAD", //"CONTACT","LEAD","DEAL"
-                                    'TYPE_ID' => "PHONE",
-                                ) //фильтр
-                            );
-                            if ($leadPhoneData = $dbCont->Fetch()) {
-                                $arFields["FM"] = array(
-                                    'PHONE' => array(
-                                        $leadPhoneData['ID'] => array(
-                                            'VALUE' => $phone,
-                                            'VALUE_TYPE' => 'WORK'
-                                        )
-                                    ),
-                                );
-                            }
-                        }
-
-                        $is_success = $leadEntity->Update($event['artmax_lead_id'], $arFields,
-                            true,
-                            true,
-                            array('DISABLE_USER_FIELD_CHECK' => true));
-                    }
-
-                    if ($lead_fields['CONTACT_ID'] == "") {
-                        $contactId = self::createLeadContact($userId, $fio, $phone);
-                        if( $event['artmax_deal_id'] == "" || $event['artmax_deal_id'] == null ){
-                            $dealId = self::createDeal($fio." ".$phone,$servicePrice,$contactId,$serviceDoctor);
-                            self::updateEventFields($event, [
-                                'artmax_deal_id' => $dealId
-                            ]);
-
-                            $resource_id = self::getBookingResource($dealId)[0]['ID'];
-                            self::updateBookingResource($resource_id,[
-                                'serviceName' => $serviceName,
-                                'dateFrom' => $dateFrom,
-                                'dateTo' => $dateTo,
-                                'timeFrom' => $request['time_from'],
-                                'timeTo' => $request['time_to'],
-                            ]);
-                        }
-
-                        $arFields = array(
-                            "CONTACT_ID" => $contactId,
-                        );
-
-                        $is_success = $leadEntity->Update($event['artmax_lead_id'], $arFields,
-                            true,
-                            true,
-                            array('DISABLE_USER_FIELD_CHECK' => true));
-                    } else {
-                        $contactFields = [
-                            'NAME' => $fio,
-                        ];
-
-                        $contactEntity = new \CCrmContact(true);
-
-                        $dbCont = \CCrmFieldMulti::GetList(
-                            array('ID' => 'asc'), //сортировка
-                            array(
-                                'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
-                                'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
-                                'TYPE_ID' => "PHONE",
-                            ) //фильтр
-                        );
-                        if ($phoneData = $dbCont->Fetch()) {
-                            if ($phoneData['VALUE'] != $phone) {
-                                $contactFields["FM"] = array(
-                                    "PHONE" => [
-                                        $phoneData['ID'] => [
-                                            "VALUE" => $phone,
-                                            "VALUE_TYPE" => "WORK",
-                                        ],
-                                    ],
-                                );
-
-                                $isUpdateSuccess = $contactEntity->Update($lead_fields['CONTACT_ID'], $contactFields);
-                            }
-                        }
-
-                        if( $event['artmax_deal_id'] == "" || $event['artmax_deal_id'] == null ){
-                            $dealId = self::createDeal($fio." ".$phone,$servicePrice,$lead_fields['CONTACT_ID'],$serviceDoctor);
-                            self::updateEventFields($event, [
-                                'artmax_deal_id' => $dealId
-                            ]);
-
-                            $resource_id = self::getBookingResource($dealId)[0]['ID'];
-                            self::updateBookingResource($resource_id,[
-                                'serviceName' => $serviceName,
-                                'dateFrom' => $dateFrom,
-                                'dateTo' => $dateTo,
-                                'timeFrom' => $request['time_from'],
-                                'timeTo' => $request['time_to'],
-                            ]);
-                        }
-                        else{
-                            self::updateDeal($event['artmax_deal_id'],$fio." ".$phone,$servicePrice,$lead_fields['CONTACT_ID'],$serviceDoctor);
-
-                            $resource_id = self::getBookingResource($event['artmax_deal_id'])[0]['ID'];
-                            self::updateBookingResource($resource_id,[
-                                'serviceName' => $serviceName,
-                                'dateFrom' => $dateFrom,
-                                'dateTo' => $dateTo,
-                                'timeFrom' => $request['time_from'],
-                                'timeTo' => $request['time_to'],
-                            ]);
-                        }
-                    }
-                }
-
-                $str_to_event_name = "Событие: ";
                 if ($fio != "") {
                     self::updateEventFields($event, [
                         'FIO' => $fio
                     ]);
-                    $str_to_event_name .= " " . $fio;
                 }
                 if ($phone != "") {
                     self::updateEventFields($event, [
                         'PHONE' => $phone
                     ]);
-                    $str_to_event_name .= " " . $phone;
                 }
-                if ($serviceName != "") {
+                if ($serviceName != "-1") {
                     self::updateEventFields($event, [
                         'artmax_serviceName' => $serviceName
                     ]);
                 }
                 if ($serviceDuration != "") {
-                    echo "duration: " . $serviceDuration;
                     self::updateEventFields($event, [
                         'artmax_serviceDuration' => $serviceDuration,
                     ]);
@@ -1434,30 +1265,285 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         'artmax_servicePrice' => $servicePrice,
                     ]);
                 }
-                if ($serviceRegion != "") {
+                if ($serviceRegion != "-1") {
                     self::updateEventFields($event, [
                         'artmax_serviceRegion' => (int)$serviceRegion,
                     ]);
                 }
-                if ($serviceDoctor != "") {
+                if ($serviceDoctor != "0") {
                     self::updateEventFields($event, [
-                        'artmax_serviceDoctor' => (int)$serviceDoctor,
+                        'artmax_serviceDoctor' => $serviceDoctor,
+                    ]);
+                }
+                if($serviceComment != ""){
+                    self::updateEventFields($event, [
+                        'artmax_comment' => $serviceComment,
+                        'DESCRIPTION' => $serviceComment,
+                    ]);
+                }
+                if( $contactFrom != "-1" ){
+                    self::updateEventFields($event, [
+                        'contact_source' => $contactFrom,
                     ]);
                 }
 
-                $entryFields['NAME'] = $str_to_event_name;
-                $entryFields['ID'] = $newId;
+                if ($fio != "" && $phone != "" && $serviceName != "-1" && $servicePrice != "" && $serviceRegion != "-1" && $serviceDoctor != "0") {
 
-                \CCalendar::SaveEvent([
-                    'arFields' => $entryFields,
-                    'UF' => $arUFFields,
-                    'silentErrorMode' => false,
-                    'recursionEditMode' => $recurrenceEventMode,
-                    'currentEventDateFrom' => $currentEventDate,
-                    'sendInvitesToDeclined' => $request['sendInvitesAgain'] === 'Y',
-                    'requestUid' => $requestUid,
-                    'checkLocationOccupancy' => ($request['doCheckOccupancy'] ?? 'N') === 'Y',
-                ]);
+                    $has_lead = false;
+
+                    foreach ($artMaxUFFields as $field => $value) {
+                        if ($field === 'UF_CRM_CAL_EVENT') {
+                            foreach ($value as $contact_code) {
+                                $lead_id = explode('_', $contact_code);
+                                if ($lead_id[0] == 'L') {
+                                    $lead_fields = \CCrmLead::GetByID($lead_id[1], false);
+                                    $event['artmax_lead_id'] = $lead_id[1];
+                                    $has_lead = true;
+
+                                    if ($lead_fields['CONTACT_ID'] != "" && $lead_fields['CONTACT_ID'] != false) {
+                                        $c_fields = \CCrmContact::GetByID($lead_fields['CONTACT_ID'], false);
+                                        $dbCont = \CCrmFieldMulti::GetList(
+                                            array('ID' => 'asc'), //сортировка
+                                            array(
+                                                'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
+                                                'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                                                'TYPE_ID' => "PHONE",
+                                            ) //фильтр
+                                        );
+                                        if ($arCont = $dbCont->Fetch()) {
+                                            //$arCont["VALUE"] там значение
+
+                                            $contact_phone = $arCont['VALUE'];
+                                            $contact_full_name = $c_fields['FULL_NAME'];
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    if ($event['artmax_lead_id'] == null && $has_lead == false) {
+                        $contactId = self::createLeadContact($userId, $fio, $phone);
+                        $new_lead = self::createEventLead($fio, $serviceRegion,$contactFrom, $phone, $userId, $servicePrice, $contactId);
+
+
+                        $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $new_lead;
+
+                        self::updateEventFields($event, [
+                            'artmax_lead_id' => $new_lead,
+                        ]);
+
+                        $dealId = self::createDeal($fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$new_lead);
+                        self::updateEventFields($event, [
+                            'artmax_deal_id' => $dealId
+                        ]);
+
+                        $resource_id = self::getBookingResource($dealId)[0]['ID'];
+
+
+                        self::updateBookingResource($resource_id, [
+                            'SERVICE_NAME' => $serviceName
+                        ]);
+                    } else if ($has_lead == false && $event['artmax_lead_id'] != null) {
+                        $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $event['artmax_lead_id'];
+                        $lead_fields = \CCrmLead::GetByID($event['artmax_lead_id'], false);
+
+                        $leadEntity = new \CCrmLead(true);
+
+                        if (isset($lead_fields['ID'])) {
+                            $lead_title = "Лид #" . $event['artmax_lead_id'];
+                            if ($fio != "" && $phone != "") {
+                                $lead_title = $fio . " " . $phone;
+                            }
+
+
+                            $arFields = array(
+                                "TITLE" => "Лид " . $lead_title,
+                                "NAME" => $lead_title,
+                                "OPPORTUNITY" => $servicePrice,
+                                "UF_CRM_1678096558" => [$serviceRegion],
+                                "UF_CRM_1723449198981" => [$contactFrom]
+                            );
+
+                            if ($event['PHONE'] != $phone) {
+                                $dbCont = \CCrmFieldMulti::GetList(
+                                    array('ID' => 'asc'), //сортировка
+                                    array(
+                                        'ELEMENT_ID' => $lead_fields['ID'],
+                                        'ENTITY_ID' => "LEAD", //"CONTACT","LEAD","DEAL"
+                                        'TYPE_ID' => "PHONE",
+                                    ) //фильтр
+                                );
+                                if ($leadPhoneData = $dbCont->Fetch()) {
+                                    $arFields["FM"] = array(
+                                        'PHONE' => array(
+                                            $leadPhoneData['ID'] => array(
+                                                'VALUE' => $phone,
+                                                'VALUE_TYPE' => 'WORK'
+                                            )
+                                        ),
+                                    );
+                                }
+                            }
+
+                            $is_success = $leadEntity->Update($event['artmax_lead_id'], $arFields,
+                                true,
+                                true,
+                                array('DISABLE_USER_FIELD_CHECK' => true));
+                        }
+
+                        if ($lead_fields['CONTACT_ID'] == "") {
+                            $contactId = self::createLeadContact($userId, $fio, $phone);
+                            if ($event['artmax_deal_id'] == "" || $event['artmax_deal_id'] == null) {
+                                $dealId = self::createDeal($fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$event['artmax_lead_id']);
+                                self::updateEventFields($event, [
+                                    'artmax_deal_id' => $dealId
+                                ]);
+
+                                $resource_id = self::getBookingResource($dealId)[0]['ID'];
+                                self::updateBookingResource($resource_id, [
+                                    'SERVICE_NAME' => $serviceName,
+                                ]);
+                            }
+
+                            $arFields = array(
+                                "CONTACT_ID" => $contactId,
+                            );
+
+                            $is_success = $leadEntity->Update($event['artmax_lead_id'], $arFields,
+                                true,
+                                true,
+                                array('DISABLE_USER_FIELD_CHECK' => true));
+                        } else {
+                            $contactFields = [
+                                'NAME' => $fio,
+                            ];
+
+                            $contactEntity = new \CCrmContact(true);
+
+                            $dbCont = \CCrmFieldMulti::GetList(
+                                array('ID' => 'asc'), //сортировка
+                                array(
+                                    'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
+                                    'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                                    'TYPE_ID' => "PHONE",
+                                ) //фильтр
+                            );
+                            if ($phoneData = $dbCont->Fetch()) {
+                                if ($phoneData['VALUE'] != $phone) {
+                                    $contactFields["FM"] = array(
+                                        "PHONE" => [
+                                            $phoneData['ID'] => [
+                                                "VALUE" => $phone,
+                                                "VALUE_TYPE" => "WORK",
+                                            ],
+                                        ],
+                                    );
+
+                                    $isUpdateSuccess = $contactEntity->Update($lead_fields['CONTACT_ID'], $contactFields);
+                                }
+                            }
+
+                            if ($event['artmax_deal_id'] == "" || $event['artmax_deal_id'] == null) {
+                                $dealId = self::createDeal($fio . " " . $phone, $servicePrice, $lead_fields['CONTACT_ID'], $serviceDoctor,$event['artmax_lead_id']);
+                                self::updateEventFields($event, [
+                                    'artmax_deal_id' => $dealId
+                                ]);
+
+                                $resource_id = self::getBookingResource($dealId)[0]['ID'];
+                                self::updateBookingResource($resource_id, [
+                                    'SERVICE_NAME' => $serviceName,
+                                ]);
+                            } else {
+                                self::updateDeal($event['artmax_deal_id'], $fio . " " . $phone, $servicePrice, $lead_fields['CONTACT_ID'], $serviceDoctor);
+
+                                $resource_id = self::getBookingResource($event['artmax_deal_id'])[0]['ID'];
+                                self::updateBookingResource($resource_id, [
+                                    'SERVICE_NAME' => $serviceName,
+                                ]);
+                            }
+                        }
+                    }
+
+                    $str_to_event_name = "";
+                    if ($fio != "") {
+                        $str_to_event_name .= $fio;
+                    }
+                    if ($phone != "") {
+                        $str_to_event_name .= " " . $phone;
+                    }
+
+                    $entryFields['NAME'] = $str_to_event_name;
+                    $entryFields['ID'] = $newId;
+
+                    \CCalendar::SaveEvent([
+                        'arFields' => $entryFields,
+                        'UF' => $arUFFields,
+                        'silentErrorMode' => false,
+                        'recursionEditMode' => $recurrenceEventMode,
+                        'currentEventDateFrom' => $currentEventDate,
+                        'sendInvitesToDeclined' => $request['sendInvitesAgain'] === 'Y',
+                        'requestUid' => $requestUid,
+                        'checkLocationOccupancy' => ($request['doCheckOccupancy'] ?? 'N') === 'Y',
+                    ]);
+
+                    //Пересоздать пустое событие
+                    if ($event['artmax_event_moved'] == 0 && $event['artmax_defaultDateFrom'] != "" && $event['artmax_defaultDateFrom'] != null  && $event['DATE_FROM'] != $event['artmax_defaultDateFrom']) {
+
+                        $default_fields = json_decode($event['default_fields'],true);
+                        $default_fields['arFields']['NAME'] = $event['artmax_defaultName'];
+                        $default_fields['UF'] = [];
+                        $default_fields['silentErrorMode'] = false;
+                        $default_fields['recursionEditMode'] = $recurrenceEventMode;
+                        $default_fields['currentEventDateFrom'] = $currentEventDate;
+                        $default_fields['sendInvitesToDeclined'] = $request['sendInvitesAgain'] === 'Y';
+                        $default_fields['requestUid'] = $requestUid;
+                        $default_fields['checkLocationOccupancy'] = ($request['doCheckOccupancy'] ?? 'N') === 'Y';
+
+
+                        $def_new_id = \CCalendar::SaveEvent($default_fields);
+
+                        self::updateEventFields($event, [
+                            'artmax_event_moved' => 1
+                        ]);
+                        $new_event = self::GetById($def_new_id);
+
+                        if (isset($new_event[0])) {
+                            $new_event = $new_event[0];
+
+                            //Сохраняем поля по умолчанию
+                            self::updateEventFields($new_event, [
+                                'artmax_defaultName' => $event['artmax_defaultName'],
+                                'artmax_defaultDateFrom' => $event['artmax_defaultDateFrom'],
+                                'artmax_defaultDateTo' => $event['artmax_defaultDateTo'],
+                                'default_fields' => $event['default_fields']
+                            ]);
+                        }
+                    }
+
+                }
+                elseif (
+                    $name != "" &&
+                    ($event['artmax_defaultName'] == "" || $event['artmax_defaultName'] == null) &&
+                    $event['DATE_FROM'] != "" &&
+                    $event['DATE_TO'] != "" &&
+                    ($event['artmax_defaultDateFrom'] == "" || $event['artmax_defaultDateFrom'] == null) &&
+                    ($event['artmax_defaultDateTo'] == "" || $event['artmax_defaultDateTo'] == null) &&
+                    ($event['default_fields'] == "" || $event['default_fields'] == null)
+                ) {
+                    //Сохраняем поля по умолчанию
+                     self::updateEventFields($event, [
+                        'artmax_defaultName' => $name,
+                        'artmax_defaultDateFrom' => $event['DATE_FROM'],
+                        'artmax_defaultDateTo' => $event['DATE_TO'],
+                        'default_fields' => json_encode([
+                            'arFields' => $entryFields,
+                        ])
+                     ]);
+                }
+
             }
         }
 

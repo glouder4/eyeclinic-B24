@@ -2883,6 +2883,23 @@ select:not(:-internal-list-box) {
 	max-width: 100%;
 	margin: 0;
 }
+#comment-wrapper,
+#comment-field-title-wrapper{
+	width: 100%;
+}
+#contact-from-wrapper{
+	width: 100%;
+}
+#contact-from-wrapper>div{
+	display: flex;
+	flex-direction: column;
+}
+
+#contact-from-wrapper #contact-from-selector{
+	margin: 0;
+	width: 100%;
+	max-width: 100%;
+}
 
 .calendar-field-container-string-select .calendar-field-select:after,
 .calendar-field-container-string-select .calendar-field-select:before {

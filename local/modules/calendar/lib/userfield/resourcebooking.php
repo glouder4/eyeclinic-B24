@@ -1045,8 +1045,8 @@ class ResourceBooking extends \Bitrix\Main\UserField\TypeBase
 			if (!isset($result['DATE_FROM']))
 			{
 				\CTimeZone::Disable();
-				$result['DATE_FROM'] = $resourse['DATE_FROM']->toString();
-				$result['DATE_TO'] = $resourse['DATE_TO']->toString();
+				$result['DATE_FROM'] = (!is_null($resourse['DATE_FROM'])) ? $resourse['DATE_FROM']->toString() : $resourse['DATE_FROM_UTC']->toString();
+				$result['DATE_TO'] = (!is_null($resourse['DATE_TO'])) ? $resourse['DATE_TO']->toString(): $resourse['DATE_TO_UTC']->toString();
 				$result['SERVICE_NAME'] = $resourse['SERVICE_NAME'];
 				\CTimeZone::Enable();
 
