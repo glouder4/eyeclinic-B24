@@ -781,11 +781,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		$response = [];
 		$request = $this->getRequest();
 
-        /* echo "<pre>";
-            print_r($request->getPostList());
-        echo "</pre>";
-        die(); */
-
 		$id = (int)$request['id'];
 		$sectionId = (int)$request['section'];
 		$requestUid = (int)$request['requestUid'];
@@ -912,6 +907,40 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             if (mb_strpos($field, 'UF_') === 0)
             {
                 $artMaxUFFields[$field] = $value;
+            }
+        }
+
+        $has_attempted_lead = false;
+        $attempted_lead_data = null;
+
+        foreach ($artMaxUFFields as $field => $value) {
+            if ($field === 'UF_CRM_CAL_EVENT') {
+                foreach ($value as $contact_code) {
+                    $lead_id = explode('_', $contact_code);
+                    if ($lead_id[0] == 'L') {
+                        $lead_fields = \CCrmLead::GetByID($lead_id[1], false);
+                        $has_attempted_lead = true;
+                        $attempted_lead_data = $lead_fields;
+
+                        /* if ($lead_fields['CONTACT_ID'] != "" && $lead_fields['CONTACT_ID'] != false) {
+                            $c_fields = \CCrmContact::GetByID($lead_fields['CONTACT_ID'], false);
+                            $dbCont = \CCrmFieldMulti::GetList(
+                                array('ID' => 'asc'), //сортировка
+                                array(
+                                    'ELEMENT_ID' => $lead_fields['CONTACT_ID'],
+                                    'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                                    'TYPE_ID' => "PHONE",
+                                ) //фильтр
+                            );
+                            if ($arCont = $dbCont->Fetch()) {
+                                //$arCont["VALUE"] там значение
+
+                                $contact_phone = $arCont['VALUE'];
+                                $contact_full_name = $c_fields['FULL_NAME'];
+                            }
+                        } */
+                    }
+                }
             }
         }
 
@@ -1309,9 +1338,9 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
                 if ($fio != "" && $phone != "" && $serviceName != "-1" && $servicePrice != "" && $serviceRegion != "-1" && $serviceDoctor != "0") {
 
-                    $has_lead = false;
 
-                    if ($event['artmax_lead_id'] == null && $has_lead == false) {
+                    if ($event['artmax_lead_id'] == null && $has_attempted_lead == false) {
+
                         $contactId = self::createLeadContact($userId, $fio, $phone);
                         $new_lead = self::createEventLead($fio, $serviceRegion,$contactFrom, $phone, $userId, $servicePrice, $contactId);
 
@@ -1333,7 +1362,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         self::updateBookingResource($resource_id, [
                             'SERVICE_NAME' => $serviceName
                         ]);
-                    } else if ($has_lead == false && $event['artmax_lead_id'] != null) {
+                    }
+                    else if ($has_attempted_lead == false && $event['artmax_lead_id'] != null) {
                         $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $event['artmax_lead_id'];
                         $lead_fields = \CCrmLead::GetByID($event['artmax_lead_id'], false);
 
@@ -1353,27 +1383,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                                 "UF_CRM_1678096558" => [$serviceRegion],
                                 "UF_CRM_1723449198981" => [$contactFrom]
                             );
-
-                            if ($event['PHONE'] != $phone) {
-                                $dbCont = \CCrmFieldMulti::GetList(
-                                    array('ID' => 'asc'), //сортировка
-                                    array(
-                                        'ELEMENT_ID' => $lead_fields['ID'],
-                                        'ENTITY_ID' => "LEAD", //"CONTACT","LEAD","DEAL"
-                                        'TYPE_ID' => "PHONE",
-                                    ) //фильтр
-                                );
-                                if ($leadPhoneData = $dbCont->Fetch()) {
-                                    $arFields["FM"] = array(
-                                        'PHONE' => array(
-                                            $leadPhoneData['ID'] => array(
-                                                'VALUE' => $phone,
-                                                'VALUE_TYPE' => 'WORK'
-                                            )
-                                        ),
-                                    );
-                                }
-                            }
 
                             $is_success = $leadEntity->Update($event['artmax_lead_id'], $arFields,
                                 true,
@@ -1472,6 +1481,76 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
                 }
 
+                if($has_attempted_lead){
+
+                    if ($attempted_lead_data['CONTACT_ID'] != "" && $attempted_lead_data['CONTACT_ID'] != false) {
+                        $contactId = $attempted_lead_data['CONTACT_ID'];
+                    }
+                    else{
+                        $contactId = self::createLeadContact($userId, $fio, $phone);
+                    }
+
+                    $new_lead = $attempted_lead_data['ID'];
+
+                    $leadEntity = new \CCrmLead(true);
+
+                    $lead_title = "Лид #" . $new_lead;
+                    if ($fio != "" && $phone != "") {
+                        $lead_title = $fio . " " . $phone;
+                    }
+
+
+                    $arFields = array(
+                        //"TITLE" => "Лид " . $lead_title,
+                        "NAME" => $lead_title,
+                        "OPPORTUNITY" => $servicePrice,
+                        "UF_CRM_1678096558" => [$serviceRegion],
+                        "UF_CRM_1723449198981" => [$contactFrom],
+                        "STATUS_ID" => 'CONVERTED',
+                        "STATUS_SEMANTIC_ID" => "S",
+                        "CONTACT_ID" => $contactId,
+                    );
+
+                    $dbCont = \CCrmFieldMulti::GetList(
+                        array('ID' => 'asc'), //сортировка
+                        array(
+                            'ELEMENT_ID' => $lead_fields['ID'],
+                            'ENTITY_ID' => "LEAD", //"CONTACT","LEAD","DEAL"
+                            'TYPE_ID' => "PHONE",
+                        ) //фильтр
+                    );
+                    if ($leadPhoneData = $dbCont->Fetch()) {
+                        $arFields["FM"] = array(
+                            'PHONE' => array(
+                                $leadPhoneData['ID'] => array(
+                                    'VALUE' => $phone,
+                                    'VALUE_TYPE' => 'WORK'
+                                )
+                            ),
+                        );
+                    }
+
+                    $is_success = $leadEntity->Update($new_lead, $arFields,
+                        true,
+                        true,
+                        array('DISABLE_USER_FIELD_CHECK' => true));
+
+
+                    $dealId = self::createDeal($fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$new_lead);
+
+                    if ($event['artmax_lead_id'] != null){
+                        global $DB;
+                        $disable_lead_id = $event['artmax_lead_id'];
+                        $strSql = "UPDATE `b_calendar_event` SET `DELETED` = 'Y' WHERE `PARENT_ID` = $disable_lead_id OR `ID` = $disable_lead_id";
+                        $DB->Query($strSql, false, "Ошибка");
+                    }
+                }
+                elseif($event['artmax_lead_id'] != null){
+                    global $DB;
+                    $active_lead_id = $event['artmax_lead_id'];
+                    $strSql = "UPDATE `b_calendar_event` SET `DELETED` = 'Y' WHERE `PARENT_ID` = $active_lead_id OR `ID` = $active_lead_id";
+                    $DB->Query($strSql, false, "Ошибка");
+                }
 
                 //Пересоздать пустое событие
                 if ($event['artmax_event_moved'] == 0 &&
