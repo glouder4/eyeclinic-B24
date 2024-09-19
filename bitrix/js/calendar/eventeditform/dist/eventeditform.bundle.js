@@ -646,8 +646,8 @@ this.BX = this.BX || {};
 	    const entryFio = this.formDataValue.fio ||  data.FIO;
 
 	    
-	    this.DOM.entryName.value = entryName + " "+entryFio+ " "+entryPhone;
-	    this.DOM.entryName.title = entryName + " "+entryFio+ " "+entryPhone;
+	    this.DOM.entryName.value = entryName;
+	    this.DOM.entryName.title = entryName;
 
 	    this.DOM.fio.value = entryFio;
 	    this.DOM.fio.title = entryFio;

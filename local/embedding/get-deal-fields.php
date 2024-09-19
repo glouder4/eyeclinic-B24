@@ -153,8 +153,8 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                 $response['event_service_duration'] = $event['artmax_serviceDuration'];
                 $response['event_service_price'] = $event['artmax_servicePrice'];
                 $response['event_service_comment'] = $event['artmax_comment'];
-                $response['fio'] = $event['FIO'];
-                $response['phone'] = $event['PHONE'];
+                $response['FIO'] = $event['FIO'];
+                $response['PHONE'] = $event['PHONE'];
             }
 
             echo json_encode($response);
