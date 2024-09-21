@@ -194,6 +194,26 @@ class ArtMaxEventEmbending{
 
         return $LEAD_ID;
     }
+    public static function deleteLead($id)
+    {
+        $leadEntity = new \CCrmLead( true );
+
+        $deleteResult = $leadEntity->Delete(
+            $id,
+            [
+                'CURRENT_USER' => \CCrmSecurityHelper::GetCurrentUserID(),
+                'PROCESS_BIZPROC' => true,
+                'ENABLE_DEFERRED_MODE' => \Bitrix\Crm\Settings\LeadSettings::getCurrent()->isDeferredCleaningEnabled(),
+                'ENABLE_DUP_INDEX_INVALIDATION' => true
+            ]
+        );
+
+        if ( !$deleteResult )
+        {
+            // Операция не удалась
+            var_dump($leadEntity->LAST_ERROR);
+        }
+    }
     public function setEventId($event_id) {
         $this->eventId = $event_id;
 
@@ -1335,7 +1355,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 $fio_ok = false; $phone_ok = false; $serviceName_ok = false;
                 $serviceDuration_ok = false; $servicePrice_ok = false;
                 $serviceRegion_ok = false; $serviceDoctor_ok = false;
-                $contactFrom_ok = false;
                 if ($fio != "" && $fio != null && $fio != 'undefined') {
                     $artMaxEmbending::updateEventFields($event, [
                         'FIO' => $fio
@@ -1388,16 +1407,21 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     $artMaxEmbending::updateEventFields($event, [
                         'contact_source' => $contactFrom,
                     ]);
-                    $contactFrom_ok = true;
                 }
 
-                if ($fio_ok != "" && $phone_ok && $serviceName_ok && $serviceDuration_ok && $servicePrice_ok && $serviceRegion_ok && $serviceDoctor_ok && $contactFrom_ok) {
+                if ($fio_ok != "" && $phone_ok && $serviceName_ok && $serviceDuration_ok && $servicePrice_ok && $serviceRegion_ok && $serviceDoctor_ok) {
+
+
                     $lead_id = null;
                     $lead_data = null;
 
                     $contactId = null;
                     // Получаем лид
                     if($has_attempted_lead){
+                        if(!is_null($event['artmax_lead_id'])){
+                            $artMaxEmbending::deleteLead($event['artmax_lead_id']);
+                        }
+
                         $artMaxEmbending::updateEventFields($event, [
                             'artmax_lead_id' => $attempted_lead_data['ID'],
                             'artmax_event_moved' => 1
@@ -1459,7 +1483,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     \CCalendar::SaveEvent([
                         'arFields' => [
                             'ID' => $event['ID'],
-                            'NAME' => $parent_event['NAME']." ".$fio." ".$phone
+                            'NAME' => ( $name != ($parent_event['NAME']." ".$fio." ".$phone) ) ? $name : $event['NAME']
                         ],
                         'UF' => $arUFFields,
                         'silentErrorMode' => false,
