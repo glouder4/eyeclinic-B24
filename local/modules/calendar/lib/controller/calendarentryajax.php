@@ -35,7 +35,6 @@ class ArtMaxEventEmbending{
         $strSql = "UPDATE b_calendar_event SET ".
             $DB->PrepareUpdate("b_calendar_event", $fields)
             . " WHERE ID=" . (int)$event['ID'] . " OR `PARENT_ID`=".(int)$event['ID']."; ";
-        echo $strSql."<br/>";
         $DB->Query($strSql);
 
 
@@ -308,6 +307,23 @@ class ArtMaxEventEmbending{
 
             $contactEntity->Update($id, $contactFields);
         }
+    }
+    public static function getContactData($id)
+    {
+        $fields = \CCrmContact::GetByID($id, false);
+        $dbCont = \CCrmFieldMulti::GetList(
+            array('ID' => 'asc'), //сортировка
+            array(
+                'ELEMENT_ID' => $id,
+                'ENTITY_ID' => "CONTACT", //"CONTACT","LEAD","DEAL"
+                'TYPE_ID' => "PHONE",
+            ) //фильтр
+        );
+        if($arCont = $dbCont->Fetch()){
+            $fields['PHONE'] = $arCont['VALUE'];
+            return $fields;
+        }
+        else return  false;
     }
 }
 
@@ -939,6 +955,10 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		// Default name for events
 		$name = trim($request['name']);
 		$fio = trim($request['fio']);
+        $is_full_form = false;
+        if( !isset($request['serviceName']) ){
+            $is_full_form = true;
+        }
 
         $serviceName = trim($request['serviceName']);
         $serviceDuration = trim($request['serviceDuration']);
@@ -1409,7 +1429,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     ]);
                 }
 
-                if ($fio_ok != "" && $phone_ok && $serviceName_ok && $serviceDuration_ok && $servicePrice_ok && $serviceRegion_ok && $serviceDoctor_ok) {
+                if (!$is_full_form && $fio_ok && $phone_ok && $serviceName_ok && $serviceDuration_ok && $servicePrice_ok && $serviceRegion_ok && $serviceDoctor_ok) {
 
 
                     $lead_id = null;
@@ -1494,6 +1514,94 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         'checkLocationOccupancy' => ($request['doCheckOccupancy'] ?? 'N') === 'Y',
                     ]);
 
+                }
+                // lead id 4497
+                elseif($is_full_form && $has_attempted_lead && !is_null($event['artmax_lead_id'])){
+                    $lead_id = $attempted_lead_data["ID"];
+                    $lead_data = $attempted_lead_data;
+                    $prev_lead_data = null;
+                    $contactId = null;
+                    $leadFields = array();
+
+                    $prev_lead_data = \CCrmLead::GetByID($event['artmax_lead_id'], false);
+
+                    //Получаем контакт
+                    if ($lead_data['CONTACT_ID'] != "" && $lead_data['CONTACT_ID'] != false) {
+                        $contactId = $lead_data['CONTACT_ID'];
+                        echo "contact !empty";
+
+                        // Если у предыдущего лида был контакт
+                        if (!is_null($prev_lead_data) && $prev_lead_data['CONTACT_ID'] != "" && $prev_lead_data['CONTACT_ID'] != false){
+                            $prev_contact = $artMaxEmbending::getContactData($prev_lead_data['CONTACT_ID']);
+                            $current_contact = $artMaxEmbending::getContactData($contactId);
+
+                            // и они не совпадают -> Проверка на заполненность контакта
+                            if( $prev_contact['ID'] != $current_contact['ID'] ){
+                                if( is_null($current_contact['NAME']) || $current_contact['NAME'] == "" ){
+                                    if( !is_null($prev_contact['NAME']) && $prev_contact['NAME'] != "" ){
+                                        if( !is_null($prev_contact['PHONE']) && $prev_contact['PHONE'] != "" ){
+                                            $artMaxEmbending::updateContact($current_contact['ID'], $prev_contact['NAME'], $prev_contact['PHONE']);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        //Обновляем лид
+                        $lead_title = $fio." ".$phone." #" . $lead_id;
+                        $leadFields = array(
+                            "TITLE" => $lead_title,
+                            "NAME" => $lead_title,
+                            "CONTACT_ID" => $contactId,
+                            "STATUS_ID" => 'CONVERTED',
+                            "STATUS_SEMANTIC_ID" => "S",
+                        );
+                        if( !is_null($event['artmax_serviceRegion']) && $event['artmax_serviceRegion'] != "" ){
+                            $leadFields['UF_CRM_1678096558'] = [$event['artmax_serviceRegion']];
+                        }
+                        if( !is_null($event['contact_source']) && $event['contact_source'] != "" ){
+                            $leadFields['UF_CRM_1678096558'] = [$event['contact_source']];
+                        }
+                        if( !is_null($event['artmax_servicePrice']) && $event['artmax_servicePrice'] != "" ){
+                            $leadFields['OPPORTUNITY'] = [$event['artmax_servicePrice']];
+                        }
+                    }
+                    //иначе если у предыдущего лида есть контакт
+                    elseif (!is_null($prev_lead_data) && $prev_lead_data['CONTACT_ID'] != "" && $prev_lead_data['CONTACT_ID'] != false){
+                        // Если у предыдущего лида был контакт
+                        if (!is_null($prev_lead_data) && $prev_lead_data['CONTACT_ID'] != "" && $prev_lead_data['CONTACT_ID'] != false){
+                            $prev_contact = $artMaxEmbending::getContactData($prev_lead_data['CONTACT_ID']);
+                            $contactId = $prev_contact['ID'];
+                        }
+                        else{
+                            $contactId = $artMaxEmbending::createLeadContact($userId, $fio, $phone);
+                        }
+
+                        //Обновляем лид
+                        $leadFields = array(
+                            //"TITLE" => $lead_title,
+                            //"NAME" => $lead_title,
+                            "CONTACT_ID" => $contactId,
+                            "STATUS_ID" => 'CONVERTED',
+                            "STATUS_SEMANTIC_ID" => "S",
+                        );
+                        if( !is_null($event['artmax_serviceRegion']) && $event['artmax_serviceRegion'] != "" ){
+                            $leadFields['UF_CRM_1678096558'] = [$event['artmax_serviceRegion']];
+                        }
+                        if( !is_null($event['contact_source']) && $event['contact_source'] != "" ){
+                            $leadFields['UF_CRM_1678096558'] = [$event['contact_source']];
+                        }
+                        if( !is_null($event['artmax_servicePrice']) && $event['artmax_servicePrice'] != "" ){
+                            $leadFields['OPPORTUNITY'] = $event['artmax_servicePrice'];
+                        }
+                    }
+
+                    $artMaxEmbending::deleteLead($prev_lead_data['ID']);
+                    $artMaxEmbending::updateEventFields($event, [
+                        'artmax_lead_id' => $lead_data['ID']
+                    ]);
+
+                    $artMaxEmbending::updateLead($lead_data['ID'],$leadFields);
                 }
 
 

@@ -1769,7 +1769,7 @@ this.BX = this.BX || {};
 	    this.freezePopup();
 
 		  // Тут передавать данные на сохранение
-		  data.g4_fields = 'qqq';
+		  //data.g4_fields = 'qqq';
 
 
 	    this.BX.ajax.runAction('calendar.api.calendarentryajax.editEntry', {
