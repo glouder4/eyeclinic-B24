@@ -1339,10 +1339,11 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             $artMaxEmbending = new ArtMaxEventEmbending();
             $event = $artMaxEmbending::GetById($newId);
 
-            if ($event && ( !is_null($event['RECURRENCE_ID']) || $event['ID'] > 4000 )) {
-                if( is_null($event['RECURRENCE_ID']) && $event['ID'] > 4000 ){
-                    $event['RECURRENCE_ID'] = $event['ID'];
-                }
+            if( is_null($event['RECURRENCE_ID']) ){
+                $event['RECURRENCE_ID'] = $event['ID'];
+            }
+
+            if ($event) {
 
                 if (($event['reserve_id'] == "" || $event['reserve_id'] == null)) {
                     $parent_event = $artMaxEmbending::GetById($event['RECURRENCE_ID'],'b_calendar_event',true);
@@ -1375,16 +1376,16 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 $fio_ok = false; $phone_ok = false; $serviceName_ok = false;
                 $serviceDuration_ok = false; $servicePrice_ok = false;
                 $serviceRegion_ok = false; $serviceDoctor_ok = false;
-                if ($fio != "" && $fio != null && $fio != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
+                if (!empty($fio)) {
+                    /* $artMaxEmbending::updateEventFields($event, [
                         'FIO' => $fio
-                    ]);
+                    ]); */
                     $fio_ok = true;
                 }
-                if ($phone != "" && $phone != null && $phone != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
+                if (!empty($phone)) {
+                    /* $artMaxEmbending::updateEventFields($event, [
                         'PHONE' => $phone
-                    ]);
+                    ]); */
                     $phone_ok = true;
                 }
                 if ($serviceName != "-1" && $serviceName != "" && $serviceName != null && $serviceName != 'undefined') {
