@@ -1074,10 +1074,16 @@ this.BX = this.BX || {};
 							_this.DOM.fioInput.value = data['FIO'];
 						}
 					}
+					else{
+						_this.DOM.fioInput.value = "";
+					}
 					if(data.hasOwnProperty('PHONE')){
 						if( data['PHONE'] != "" ){
 							_this.DOM.phoneInput.value = data['PHONE'];
 						}
+					}
+					else{
+						_this.DOM.phoneInput.value = "";
 					}
 				}
 			});

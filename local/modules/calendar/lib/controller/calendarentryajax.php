@@ -32,11 +32,12 @@ class ArtMaxEventEmbending{
         }
         \CTimeZone::Disable();
 
+
+
         $strSql = "UPDATE b_calendar_event SET ".
             $DB->PrepareUpdate("b_calendar_event", $fields)
             . " WHERE ID=" . (int)$event['ID'] . " OR `PARENT_ID`=".(int)$event['ID']."; ";
         $DB->Query($strSql);
-
 
         \CTimeZone::Enable();
     }
@@ -47,9 +48,6 @@ class ArtMaxEventEmbending{
         $res = $DB->Query($strSql, false, "Ошибка");
 
         if ($record = $res->fetch()) {
-            if (is_null($record['RECURRENCE_ID']) && ($record < 4000) && !$return_reccurence) {
-                return self::getEventByReccurenceId($ID);
-            }
             return $record;
         }
         else
@@ -1208,6 +1206,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		}
 
 		$errors = \CCalendar::GetErrors();
+
+
 		$eventList = [];
 		$eventIdList = [$newId];
 
@@ -1336,8 +1336,9 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		UserSettings::set($userSettings, $userId);
 
         if ($newId && empty($errors)) {
+
             $artMaxEmbending = new ArtMaxEventEmbending();
-            $event = $artMaxEmbending::GetById($newId);
+            $event = $artMaxEmbending::getEventByReccurenceId($newId);
 
             if( is_null($event['RECURRENCE_ID']) ){
                 $event['RECURRENCE_ID'] = $event['ID'];
@@ -1345,7 +1346,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
             if ($event) {
 
-                if (($event['reserve_id'] == "" || $event['reserve_id'] == null)) {
+                /* if (($event['reserve_id'] == "" || $event['reserve_id'] == null)) {
                     $parent_event = $artMaxEmbending::GetById($event['RECURRENCE_ID'],'b_calendar_event',true);
                     $entryFields['NAME'] = $parent_event['NAME'];
                     $entryFields['FIO'] = null;
@@ -1371,21 +1372,26 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     $artMaxEmbending::updateEventFields($event, [
                         'reserve_id' => $reserve_event_id
                     ]);
-                }
+                } */
 
                 $fio_ok = false; $phone_ok = false; $serviceName_ok = false;
                 $serviceDuration_ok = false; $servicePrice_ok = false;
                 $serviceRegion_ok = false; $serviceDoctor_ok = false;
                 if (!empty($fio)) {
-                    /* $artMaxEmbending::updateEventFields($event, [
-                        'FIO' => $fio
-                    ]); */
+                    if( empty($event['FIO']) || is_null($event['FIO']) || $event['FIO'] == "" ){
+                        $artMaxEmbending::updateEventFields($event, [
+                            'FIO' => $fio
+                        ]);
+                    }
                     $fio_ok = true;
                 }
                 if (!empty($phone)) {
-                    /* $artMaxEmbending::updateEventFields($event, [
-                        'PHONE' => $phone
-                    ]); */
+                    if( empty($event['PHONE']) || is_null($event['PHONE']) || $event['PHONE'] == "" ){
+                        $artMaxEmbending::updateEventFields($event, [
+                            'PHONE' => $phone
+                        ]);
+                    }
+
                     $phone_ok = true;
                 }
                 if ($serviceName != "-1" && $serviceName != "" && $serviceName != null && $serviceName != 'undefined') {
@@ -1501,11 +1507,12 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     }
 
                     $parent_event = $artMaxEmbending::GetById($event['RECURRENCE_ID'],'b_calendar_event',true);
+
+                    $entryFields['ID'] = $event['ID'];
+                    $entryFields['NAME'] = ( $name != ($parent_event['NAME']." ".$fio." ".$phone) ) ? $name : $event['NAME'];
+
                     \CCalendar::SaveEvent([
-                        'arFields' => [
-                            'ID' => $event['ID'],
-                            'NAME' => ( $name != ($parent_event['NAME']." ".$fio." ".$phone) ) ? $name : $event['NAME']
-                        ],
+                        'arFields' => $entryFields,
                         'UF' => $arUFFields,
                         'silentErrorMode' => false,
                         'recursionEditMode' => $recurrenceEventMode,
@@ -1607,7 +1614,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 
                 //Пересоздать пустое событие
-                if ($event['artmax_event_moved'] == 0 &&
+                /* if ($event['artmax_event_moved'] == 0 &&
                     !is_null($event['RECURRENCE_ID']) &&
                     !is_null($event['reserve_id'])
                 ) {
@@ -1624,7 +1631,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                             'artmax_event_moved' => 1
                         ]);
                     }
-                }
+                } */
             }
         }
 
