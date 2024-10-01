@@ -36,8 +36,9 @@ class ArtMaxEventEmbending{
 
         $strSql = "UPDATE b_calendar_event SET ".
             $DB->PrepareUpdate("b_calendar_event", $fields)
-            . " WHERE ID=" . (int)$event['ID'] . " OR `PARENT_ID`=".(int)$event['ID']."; ";
+            . " WHERE ID=" . (int)$event['ID'];
         $DB->Query($strSql);
+        //echo $strSql."<br/>";
 
         \CTimeZone::Enable();
     }
@@ -1335,10 +1336,22 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 		$userSettings['defaultReminders'][$skipTime ? 'fullDay' : 'withTime'] = $reminderList;
 		UserSettings::set($userSettings, $userId);
 
+
         if ($newId && empty($errors)) {
+            if( isset($request['rec_edit_mode']) && $request['rec_edit_mode'] != "this" ){
+                return $response;
+            }
 
             $artMaxEmbending = new ArtMaxEventEmbending();
-            $event = $artMaxEmbending::getEventByReccurenceId($newId);
+
+            if( isset($request['rec_edit_mode']) && $request['rec_edit_mode'] == "this" ){
+                $event = $artMaxEmbending::getEventByReccurenceId($newId);
+            }
+            else{
+                $event = $artMaxEmbending::GetByID($newId);
+            }
+
+
 
             if( is_null($event['RECURRENCE_ID']) ){
                 $event['RECURRENCE_ID'] = $event['ID'];
@@ -1377,20 +1390,16 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 $fio_ok = false; $phone_ok = false; $serviceName_ok = false;
                 $serviceDuration_ok = false; $servicePrice_ok = false;
                 $serviceRegion_ok = false; $serviceDoctor_ok = false;
-                if (!empty($fio)) {
-                    if( empty($event['FIO']) || is_null($event['FIO']) || $event['FIO'] == "" ){
-                        $artMaxEmbending::updateEventFields($event, [
-                            'FIO' => $fio
-                        ]);
-                    }
+                if (!empty($fio) && !is_null($fio) && $fio != "") {
+                    $artMaxEmbending::updateEventFields($event, [
+                        'FIO' => $fio
+                    ]);
                     $fio_ok = true;
                 }
-                if (!empty($phone)) {
-                    if( empty($event['PHONE']) || is_null($event['PHONE']) || $event['PHONE'] == "" ){
-                        $artMaxEmbending::updateEventFields($event, [
-                            'PHONE' => $phone
-                        ]);
-                    }
+                if (!empty($phone) && !is_null($fio) && $fio != "") {
+                    $artMaxEmbending::updateEventFields($event, [
+                        'PHONE' => $phone
+                    ]);
 
                     $phone_ok = true;
                 }
@@ -1511,16 +1520,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     $entryFields['ID'] = $event['ID'];
                     $entryFields['NAME'] = ( $name != ($parent_event['NAME']." ".$fio." ".$phone) ) ? $name : $event['NAME'];
 
-                    \CCalendar::SaveEvent([
-                        'arFields' => $entryFields,
-                        'UF' => $arUFFields,
-                        'silentErrorMode' => false,
-                        'recursionEditMode' => $recurrenceEventMode,
-                        'currentEventDateFrom' => $currentEventDate,
-                        'sendInvitesToDeclined' => $request['sendInvitesAgain'] === 'Y',
-                        'requestUid' => $requestUid,
-                        'checkLocationOccupancy' => ($request['doCheckOccupancy'] ?? 'N') === 'Y',
-                    ]);
+                    \CCalendarEvent::UpdateUserFields($event['ID'],$arUFFields);
 
                 }
                 // lead id 4497
