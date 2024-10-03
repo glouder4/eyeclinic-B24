@@ -92,14 +92,17 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
             $doctors = $fieldsInfo['UF_CRM_1655488213455']['ITEMS'];
             $services = $fieldsInfo['UF_CRM_1590412209544']['SETTINGS']['SERVICE_LIST'];
             $contactsFrom = $ContactFieldsInfo['UF_CRM_1723449198981']['ITEMS'];
-
+            //echo "<pre>";
+               // print_r($doctors);
+            //echo "</pre>";
+            //die();
 
             $event = null;
             if( isset($post_fields['event_id']) && $post_fields['event_id'] > 0 ){
                 $event = GetEventByID($post_fields['event_id']);
 
                 if(isset($event[0])) $event = $event[0];
-                if( !empty($event['RECURRENCE_ID']) ) {
+                if( empty($event['RRULE']) ) {
                     function stripWhitespaces($string)
                     {
                         $old_string = $string;
@@ -150,7 +153,7 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/prolog_befo
                 'services' => $services,
                 'contact_sources' => $contactsFrom
             ];
-            if( !is_null($event) && !empty($event['RECURRENCE_ID']) ){
+            if( !is_null($event) && empty($event['RRULE']) ){
                 $response['event_service_duration'] = $event['artmax_serviceDuration'];
                 $response['event_service_price'] = $event['artmax_servicePrice'];
                 $response['event_service_comment'] = $event['artmax_comment'];

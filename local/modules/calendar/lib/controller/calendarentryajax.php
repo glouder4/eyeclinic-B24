@@ -19,6 +19,21 @@ use Bitrix\Main\Loader;
 
 Loc::loadMessages($_SERVER['DOCUMENT_ROOT'].BX_ROOT.'/modules/calendar/lib/controller/calendarajax.php');
 
+function stripWhitespaces($string)
+{
+    $old_string = $string;
+    $string = strip_tags($string);
+    $string = preg_replace('/([^\pL\pN\pP\pS\pZ])|([\xC2\xA0])/u', ' ', $string);
+    $string = str_replace('  ', ' ', $string);
+    $string = trim($string);
+
+    if ($string === $old_string) {
+        return $string;
+    } else {
+        return stripWhitespaces($string);
+    }
+}
+
 class ArtMaxEventEmbending{
     protected $eventId = null;
 
@@ -65,8 +80,63 @@ class ArtMaxEventEmbending{
         }
         else return false;
     }
-    public static function createDeal($title,$price,$contactId,$doctor,$lead_id)
+    public static function createDeal($title,$price,$contactId,$serviceDoctor,$lead_id,$serviceName,$region,$dateFrom,$duration = 30)
     {
+        global $USER_FIELD_MANAGER;
+        $fieldsInfo = \CCrmDeal::GetFieldsInfo();
+        foreach ($fieldsInfo as $code => &$field)
+        {
+            $field['CAPTION'] = \CCrmDeal::GetFieldCaption($code);
+        }
+
+        $userType = new \CCrmUserType(
+            $USER_FIELD_MANAGER,
+            \CCrmDeal::$sUFEntityID
+        );
+        $userType->PrepareFieldsInfo($fieldsInfo);
+
+        $LeadFieldsInfo = \CCrmLead::GetFieldsInfo();
+        $typesID = array_keys( \CCrmFieldMulti::GetEntityTypeInfos() );
+        foreach($typesID as $typeID)
+        {
+            $LeadFieldsInfo[$typeID] = [
+                'TYPE' => 'crm_multifield',
+                'ATTRIBUTES' => [\CCrmFieldInfoAttr::Multiple]
+            ];
+        }
+
+        foreach ($LeadFieldsInfo as $code => &$field)
+        {
+            $field['CAPTION'] = \CCrmLead::GetFieldCaption($code);
+        }
+
+        $userType = new \CCrmUserType(
+            $USER_FIELD_MANAGER,
+            \CCrmLead::$sUFEntityID
+        );
+        $userType->PrepareFieldsInfo($LeadFieldsInfo);
+
+        foreach ($LeadFieldsInfo['UF_CRM_1678096558']['ITEMS'] as $lead_region_item){
+            if( $lead_region_item['ID'] == $region ){
+                $region = $lead_region_item['VALUE'];
+                break;
+            }
+        }
+
+        $serviceDoctorID = null;
+        foreach ($fieldsInfo['UF_CRM_1655488213455']['ITEMS'] as $key => $doctor_item) {
+            if (stripWhitespaces($doctor_item['VALUE']) == stripWhitespaces($serviceDoctor)) {
+                $serviceDoctorID = $doctor_item['ID'];
+                break;
+            }
+        }
+        foreach ($fieldsInfo['UF_CRM_6405B9B55548C']['ITEMS'] as $key => $region_item) {
+            if (stripWhitespaces($region_item['VALUE']) == stripWhitespaces($region)) {
+                $region = $region_item['ID'];
+                break;
+            }
+        }
+
         $entityFields = [
             'TITLE'    => 'Сделка: '.$title,
             'STAGE_ID' => 'NEW',
@@ -77,8 +147,9 @@ class ArtMaxEventEmbending{
                 $contactId,
             ],
             "LEAD_ID" => $lead_id,
-            "UF_CRM_1590412209544" => [83],
-            "UF_CRM_1655488213455" => $doctor,
+            "UF_CRM_1590412209544" => ["user|13|".$dateFrom."|30|".$serviceName],
+            "UF_CRM_1655488213455" => $serviceDoctorID,
+            "UF_CRM_6405B9B55548C" => [$region],
             'OPENED' => 'Y',
             'ASSIGNED_BY_ID' => \CCrmSecurityHelper::GetCurrentUserID(),
             'SOURCE_ID' => 'OTHER',
@@ -96,16 +167,80 @@ class ArtMaxEventEmbending{
                 'DISABLE_REQUIRED_USER_FIELD_CHECK' => false,
             ]
         );
+        //echo "dID: ";
+        //print_r($entityId);
+        if ( !$entityId )
+        {
+            print_r($entityFields);
+        }
 
         return $entityId;
     }
-    private function updateDeal($deal_id,$title,$price,$contactId,$serviceDoctor)
+    public static function updateDeal($deal_id,$title,$price,$contactId,$serviceDoctor,$lead_id,$serviceName,$region,$dateFrom,$duration = 30)
     {
+        global $USER_FIELD_MANAGER;
+        $fieldsInfo = \CCrmDeal::GetFieldsInfo();
+        foreach ($fieldsInfo as $code => &$field)
+        {
+            $field['CAPTION'] = \CCrmDeal::GetFieldCaption($code);
+        }
+
+        $userType = new \CCrmUserType(
+            $USER_FIELD_MANAGER,
+            \CCrmDeal::$sUFEntityID
+        );
+        $userType->PrepareFieldsInfo($fieldsInfo);
+
+        $LeadFieldsInfo = \CCrmLead::GetFieldsInfo();
+        $typesID = array_keys( \CCrmFieldMulti::GetEntityTypeInfos() );
+        foreach($typesID as $typeID)
+        {
+            $LeadFieldsInfo[$typeID] = [
+                'TYPE' => 'crm_multifield',
+                'ATTRIBUTES' => [\CCrmFieldInfoAttr::Multiple]
+            ];
+        }
+
+        foreach ($LeadFieldsInfo as $code => &$field)
+        {
+            $field['CAPTION'] = \CCrmLead::GetFieldCaption($code);
+        }
+
+        $userType = new \CCrmUserType(
+            $USER_FIELD_MANAGER,
+            \CCrmLead::$sUFEntityID
+        );
+        $userType->PrepareFieldsInfo($LeadFieldsInfo);
+
+        foreach ($LeadFieldsInfo['UF_CRM_1678096558']['ITEMS'] as $lead_region_item){
+            if( $lead_region_item['ID'] == $region ){
+                $region = $lead_region_item['VALUE'];
+                break;
+            }
+        }
+
+        $serviceDoctorID = null;
+        foreach ($fieldsInfo['UF_CRM_1655488213455']['ITEMS'] as $key => $doctor_item) {
+            if (stripWhitespaces($doctor_item['VALUE']) == stripWhitespaces($serviceDoctor)) {
+                $serviceDoctorID = $doctor_item['ID'];
+                break;
+            }
+        }
+        foreach ($fieldsInfo['UF_CRM_6405B9B55548C']['ITEMS'] as $key => $region_item) {
+            if (stripWhitespaces($region_item['VALUE']) == stripWhitespaces($region)) {
+                $region = $region_item['ID'];
+                break;
+            }
+        }
 
         $entityFields = [
             'TITLE' => 'Сделка: '.$title,
             'UF_CRM_1655487439761' => $price,
-            "UF_CRM_1655488213455" => $serviceDoctor,
+            "UF_CRM_1590412209544" => ["user|13|".$dateFrom."|30|".$serviceName],
+            "UF_CRM_1655488213455" => $serviceDoctorID,
+            "UF_CRM_6405B9B55548C" => [$region],
+            "LEAD_ID" => $lead_id,
+            //"UF_CRM_1655488213455" => $serviceDoctor,
             'CONTACT_IDS' => [
                 $contactId,
             ],
@@ -113,7 +248,7 @@ class ArtMaxEventEmbending{
 
         $entityObject = new \CCrmDeal( true );
 
-        $entityObject->Update(
+        $res = $entityObject->Update(
             $deal_id,
             $entityFields,
             $bCompare = true,
@@ -127,6 +262,11 @@ class ArtMaxEventEmbending{
                 'DISABLE_REQUIRED_USER_FIELD_CHECK' => false,
             ]
         );
+        echo $deal_id;
+        echo "<pre>";
+            print_r($entityFields);
+        echo "</pre>";
+        //die();
     }
     public static function createLeadContact($userId,$name,$phone)
     {
@@ -232,6 +372,7 @@ class ArtMaxEventEmbending{
 
         return $newId;
     }
+
     public static function updateBookingResource($id,$params)
     {
         global $DB;
@@ -1505,7 +1646,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
                     //Работаем со сделкой
                     if ($event['artmax_deal_id'] == "" || $event['artmax_deal_id'] == null) {
-                        $dealId = $artMaxEmbending::createDeal($fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$lead_id);
+
+                        $dealId = $artMaxEmbending::createDeal($fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$lead_id,$serviceName,$serviceRegion,$dateFrom,$serviceDuration);
                         $artMaxEmbending::updateEventFields($event, [
                             'artmax_deal_id' => $dealId,
                         ]);
@@ -1513,6 +1655,51 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         $artMaxEmbending::updateBookingResource($resource_id, [
                             'SERVICE_NAME' => $serviceName
                         ]);
+
+                        /*отправляем уведомление о новой сделке*/
+                        $attach = new \CIMMessageParamAttach(null, "#95c255");
+                        $attach->AddLink(Array(
+                            "NAME" => "Создана сделка № " . $dealId . "",
+                            "DESC" => "Сделка создана автоматичски!",
+                            "LINK" => "https://eyeclinicufa.ru//crm/deal/details/" . $dealId . "/"
+                        ));
+                        $arMessageFields = array(
+                            "TO_USER_ID" => $userId,
+                            "FROM_USER_ID" => $userId,
+                            "NOTIFY_TYPE" => IM_NOTIFY_SYSTEM,
+                            "MESSAGE" => "Создана новая сделка!",
+                            "ATTACH" => Array(
+                                $attach
+                            )
+                        );
+                        $mess = \CIMNotify::Add($arMessageFields);
+                        //\CMain::FinalActions();
+                    }
+                    else{
+                        $artMaxEmbending::updateDeal($event['artmax_deal_id'],$fio . " " . $phone, $servicePrice, $contactId, $serviceDoctor,$lead_id,$serviceName,$serviceRegion,$dateFrom,$serviceDuration);
+                        $resource_id = $artMaxEmbending::getBookingResource($event['artmax_deal_id'])[0]['ID'];
+                        $artMaxEmbending::updateBookingResource($resource_id, [
+                            'SERVICE_NAME' => $serviceName
+                        ]);
+
+                        /*отправляем уведомление о новой сделке*/
+                        $attach = new \CIMMessageParamAttach(null, "#95c255");
+                        $attach->AddLink(Array(
+                            "NAME" => "Обновлена сделка № " . $event['artmax_deal_id'] . "",
+                            "DESC" => "Сделка обновлена автоматичски!",
+                            "LINK" => "https://eyeclinicufa.ru//crm/deal/details/" . $event['artmax_deal_id'] . "/"
+                        ));
+                        $arMessageFields = array(
+                            "TO_USER_ID" => $userId,
+                            "FROM_USER_ID" => $userId,
+                            "NOTIFY_TYPE" => IM_NOTIFY_SYSTEM,
+                            "MESSAGE" => "Обновлена сделка!",
+                            "ATTACH" => Array(
+                                $attach
+                            )
+                        );
+                        $mess = \CIMNotify::Add($arMessageFields);
+                        //\CMain::FinalActions();
                     }
 
                     $parent_event = $artMaxEmbending::GetById($event['RECURRENCE_ID'],'b_calendar_event',true);
