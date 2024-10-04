@@ -1479,8 +1479,8 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 
         if ($newId && empty($errors)) {
-            if( isset($request['rec_edit_mode']) && $request['rec_edit_mode'] != "this" ){
-                return $response;
+            if( isset($request['rec_edit_mode']) && !empty($request['rec_edit_mode']) && ($request['rec_edit_mode'] != "this") ){
+               return $response;
             }
 
             $artMaxEmbending = new ArtMaxEventEmbending();
@@ -1723,7 +1723,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     //Получаем контакт
                     if ($lead_data['CONTACT_ID'] != "" && $lead_data['CONTACT_ID'] != false) {
                         $contactId = $lead_data['CONTACT_ID'];
-                        echo "contact !empty";
 
                         // Если у предыдущего лида был контакт
                         if (!is_null($prev_lead_data) && $prev_lead_data['CONTACT_ID'] != "" && $prev_lead_data['CONTACT_ID'] != false){
@@ -1794,7 +1793,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     $artMaxEmbending::deleteLead($prev_lead_data['ID']);
                     $artMaxEmbending::updateEventFields($event, [
                         'artmax_lead_id' => $lead_data['ID']
-                    ]);
+                    ]);  
 
                     $artMaxEmbending::updateLead($lead_data['ID'],$leadFields);
                 }
