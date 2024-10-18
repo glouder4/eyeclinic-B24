@@ -139,7 +139,7 @@ class ArtMaxEventEmbending{
 
         $entityFields = [
             'TITLE'    => 'Сделка: '.$title,
-            'STAGE_ID' => 'PREPARATION',
+            'STAGE_ID' => 'NEW',
             'PROBABILITY' => '100',
             'CURRENCY_ID' => 'RUB',
             'UF_CRM_1655487439761' => $price,
@@ -173,6 +173,8 @@ class ArtMaxEventEmbending{
         {
             print_r($entityFields);
         }
+        // Явный вызов событий, связанных с роботом
+        \Bitrix\Crm\Automation\Factory::runOnAdd(\CCrmOwnerType::Deal, $entityId);
 
         return $entityId;
     }
