@@ -139,7 +139,7 @@ class ArtMaxEventEmbending{
 
         $entityFields = [
             'TITLE'    => 'Сделка: '.$title,
-            'STAGE_ID' => 'NEW',
+            'STAGE_ID' => 'PREPARATION',
             'PROBABILITY' => '100',
             'CURRENCY_ID' => 'RUB',
             'UF_CRM_1655487439761' => $price,
