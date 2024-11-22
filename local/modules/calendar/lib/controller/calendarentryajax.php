@@ -17,6 +17,8 @@ use Bitrix\Calendar\Integration\Bitrix24Manager;
 use Bitrix\Intranet;
 use Bitrix\Main\Loader;
 
+\CModule::IncludeModule('im');
+
 Loc::loadMessages($_SERVER['DOCUMENT_ROOT'].BX_ROOT.'/modules/calendar/lib/controller/calendarajax.php');
 
 function stripWhitespaces($string)
@@ -842,10 +844,37 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
 	public function moveEventAction()
 	{
+
 		$request = $this->getRequest();
 		$userId = \CCalendar::getCurUserId();
 		$id = (int)$request->getPost('id');
 		$sectionId = (int)$request->getPost('section');
+
+        /*отправляем уведомление о новой сделке*/
+        $attach = new \CIMMessageParamAttach(null, "#d32f2f");
+        $attach->AddLink(Array(
+            "NAME" => "Действие запрещено",
+            "DESC" => "Действие запрещено!",
+            "LINK" => ""
+        ));
+        $arMessageFields = array(
+            "TO_USER_ID" => $userId,
+            "FROM_USER_ID" => $userId,
+            "NOTIFY_TYPE" => IM_NOTIFY_SYSTEM,
+            "MESSAGE" => "Действие запрещено! Обновите страницу!",
+            "ATTACH" => Array(
+                $attach
+            )
+        );
+        $mess = \CIMNotify::Add($arMessageFields);
+
+        return [
+            'id' => $id,
+            'reload' => true,
+            'busy_warning' => false,
+            'location_busy_warning' => false
+        ];
+        die();
 
 		if ($id)
 		{
@@ -1192,6 +1221,20 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                 }
             }
         }
+        $artMaxEmbending = new ArtMaxEventEmbending();
+
+        if( isset($request['rec_edit_mode']) && $request['rec_edit_mode'] == "this" ){
+            $pre_event_object = $artMaxEmbending::getEventByReccurenceId($id);
+        }
+        else{
+            $pre_event_object = $artMaxEmbending::GetByID($id);
+        }
+
+        if ($pre_event_object && $is_full_form){
+            $dateFrom = $pre_event_object['DATE_FROM'];
+            $dateTo = $pre_event_object['DATE_TO'];
+        }
+
 
 		$entryFields = [
 			'ID' => $id,
@@ -1329,6 +1372,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
         }
 
 		$newId = false;
+
 		try
 		{
 			$newId = \CCalendar::SaveEvent([
@@ -1485,8 +1529,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                return $response;
             }
 
-            $artMaxEmbending = new ArtMaxEventEmbending();
-
             if( isset($request['rec_edit_mode']) && $request['rec_edit_mode'] == "this" ){
                 $event = $artMaxEmbending::getEventByReccurenceId($newId);
             }
@@ -1502,99 +1544,50 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
             if ($event) {
 
-                /* if (($event['reserve_id'] == "" || $event['reserve_id'] == null)) {
-                    $parent_event = $artMaxEmbending::GetById($event['RECURRENCE_ID'],'b_calendar_event',true);
-                    $entryFields['NAME'] = $parent_event['NAME'];
-                    $entryFields['FIO'] = null;
-                    $entryFields['PHONE'] = null;
-                    $entryFields['ID'] = null;
+                function checkIsEmptyFields($fields){
+                    $hasnt_empty = true;
+                    foreach ($fields as $field){
+                        if ( empty($field) || $field == "0" || $field == "-1" || $field == "" || $field == null || $field == 'undefined') {
+                            $hasnt_empty = false;
+                            break;
+                        }
+                    }
 
-                    $reserve_event_id = $artMaxEmbending->createEvent(
-                        $entryFields,
-                        $arUFFields,
-                        $recurrenceEventMode,
-                        $currentEventDate,
-                        $request['sendInvitesAgain'] === 'Y',
-                        $requestUid,
-                        ($request['doCheckOccupancy'] ?? 'N') === 'Y'
-                    );
-                    $reserve_event = $artMaxEmbending::GetById($reserve_event_id);
-
-                    $artMaxEmbending::updateEventFields($reserve_event,[
-                        'DELETED' => 'Y'
-                    ]);
-
-                    //Сохраняем поля по умолчанию
-                    $artMaxEmbending::updateEventFields($event, [
-                        'reserve_id' => $reserve_event_id
-                    ]);
-                } */
-
-                $fio_ok = false; $phone_ok = false; $serviceName_ok = false;
-                $serviceDuration_ok = false; $servicePrice_ok = false;
-                $serviceRegion_ok = false; $serviceDoctor_ok = false;
-                if (!empty($fio) && !is_null($fio) && $fio != "") {
-                    $artMaxEmbending::updateEventFields($event, [
-                        'FIO' => $fio
-                    ]);
-                    $fio_ok = true;
+                    return $hasnt_empty;
                 }
-                if (!empty($phone) && !is_null($fio) && $fio != "") {
-                    $artMaxEmbending::updateEventFields($event, [
-                        'PHONE' => $phone
-                    ]);
 
-                    $phone_ok = true;
-                }
-                if ($serviceName != "-1" && $serviceName != "" && $serviceName != null && $serviceName != 'undefined') {
+                $fieldsToCheck = [$fio,$phone,$serviceName,$serviceDuration,$servicePrice,$serviceRegion,$serviceDoctor];
+
+                if( checkIsEmptyFields($fieldsToCheck) ){
                     $artMaxEmbending::updateEventFields($event, [
-                        'artmax_serviceName' => $serviceName
-                    ]);
-                    $serviceName_ok = true;
-                }
-                if ($serviceDuration != "" && $serviceDuration != "0" && $serviceDuration != null && $serviceDuration != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
+                        'FIO' => $fio,
+                        'PHONE' => $phone,
+                        'artmax_serviceName' => $serviceName,
                         'artmax_serviceDuration' => $serviceDuration,
-                    ]);
-                    $serviceDuration_ok = true;
-                }
-                if ($servicePrice != "" && $servicePrice != "0" && $servicePrice != null && $servicePrice != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
                         'artmax_servicePrice' => $servicePrice,
-                    ]);
-                    $servicePrice_ok = true;
-                }
-                if ($serviceRegion != "-1" && $serviceRegion != "0" && $serviceRegion != "" && $serviceRegion != null && $serviceRegion != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
                         'artmax_serviceRegion' => (int)$serviceRegion,
-                    ]);
-                    $serviceRegion_ok = true;
-                }
-                if ($serviceDoctor != "0" && $serviceDoctor != "-1" && $serviceDoctor != "" && $serviceDoctor != null && $serviceDoctor != 'undefined') {
-                    $artMaxEmbending::updateEventFields($event, [
                         'artmax_serviceDoctor' => $serviceDoctor,
                     ]);
-                    $serviceDoctor_ok = true;
                 }
-                if($serviceComment != "" && $serviceComment != null && $serviceComment != 'undefined'){
+                if( checkIsEmptyFields([$serviceComment]) ){
                     $artMaxEmbending::updateEventFields($event, [
                         'artmax_comment' => $serviceComment,
                         'DESCRIPTION' => $serviceComment,
                     ]);
                 }
-                if( $contactFrom != "-1" && $contactFrom != "0" && $contactFrom != "" && $contactFrom != null && $contactFrom != 'undefined'){
+                if( checkIsEmptyFields([$contactFrom]) ){
                     $artMaxEmbending::updateEventFields($event, [
                         'contact_source' => $contactFrom,
                     ]);
                 }
 
-                if (!$is_full_form && $fio_ok && $phone_ok && $serviceName_ok && $serviceDuration_ok && $servicePrice_ok && $serviceRegion_ok && $serviceDoctor_ok) {
-
+                if (!$is_full_form && checkIsEmptyFields($fieldsToCheck)) {
 
                     $lead_id = null;
                     $lead_data = null;
 
                     $contactId = null;
+
                     // Получаем лид
                     if($has_attempted_lead){
                         if(!is_null($event['artmax_lead_id'])){
@@ -1610,7 +1603,7 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         $event['artmax_deal_id'] = null;
                     }
                     elseif ($event['artmax_lead_id'] == null && !$has_attempted_lead) { // пусто и там и там
-                        $new_lead = $artMaxEmbending::createEventLead($fio." ".$phone. "#" . $event['artmax_lead_id'], $serviceRegion,$contactFrom, $phone, $userId, $servicePrice);
+                        $new_lead = $artMaxEmbending::createEventLead($fio." ".$phone, $serviceRegion,$contactFrom, $phone, $userId, $servicePrice);
                         $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $new_lead;
 
                         $artMaxEmbending::updateEventFields($event, [
@@ -1623,6 +1616,18 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                         $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $event['artmax_lead_id'];
                         $lead_id = $event['artmax_lead_id'];
                         $lead_data = \CCrmLead::GetByID($event['artmax_lead_id'], false);
+
+                        if(empty($lead_data)){ // По какой-то причине просрали лид
+                            $new_lead = $artMaxEmbending::createEventLead($fio." ".$phone, $serviceRegion,$contactFrom, $phone, $userId, $servicePrice);
+                            $arUFFields['UF_CRM_CAL_EVENT'][0] = "L_" . $new_lead;
+
+                            $artMaxEmbending::updateEventFields($event, [
+                                'artmax_lead_id' => $new_lead,
+                            ]);
+
+                            $lead_id = $new_lead;
+                            $lead_data = \CCrmLead::GetByID($new_lead, false);
+                        }
                     }
 
                     //Получаем контакт
@@ -1712,7 +1717,6 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
                     \CCalendarEvent::UpdateUserFields($event['ID'],$arUFFields);
 
                 }
-                // lead id 4497
                 elseif($is_full_form && $has_attempted_lead && !is_null($event['artmax_lead_id'])){
                     $lead_id = $attempted_lead_data["ID"];
                     $lead_data = $attempted_lead_data;
@@ -1794,32 +1798,11 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
 
                     $artMaxEmbending::deleteLead($prev_lead_data['ID']);
                     $artMaxEmbending::updateEventFields($event, [
-                        'artmax_lead_id' => $lead_data['ID']
-                    ]);  
+                        'artmax_lead_id' => $lead_data['ID'],
+                    ]);
 
                     $artMaxEmbending::updateLead($lead_data['ID'],$leadFields);
                 }
-
-
-                //Пересоздать пустое событие
-                /* if ($event['artmax_event_moved'] == 0 &&
-                    !is_null($event['RECURRENCE_ID']) &&
-                    !is_null($event['reserve_id'])
-                ) {
-                    $reserve_event = $artMaxEmbending::GetById($event['reserve_id']);
-
-                    if( $reserve_event['DATE_FROM'] != $event['DATE_FROM'] ){
-                        $reserve_event_id = $reserve_event['ID'];
-                        //Открываем резервный
-                        global $DB;
-                        $strSql = "UPDATE `b_calendar_event` SET `DELETED` = 'N'  WHERE `PARENT_ID` = $reserve_event_id OR `ID` = $reserve_event_id";
-                        $DB->Query($strSql, false, "Ошибка");
-
-                        $artMaxEmbending::updateEventFields($event, [
-                            'artmax_event_moved' => 1
-                        ]);
-                    }
-                } */
             }
         }
 

@@ -1708,10 +1708,11 @@ this.BX = this.BX || {};
 	    //console.log(this.DOM.phoneInput.value);
 	    //console.log(this.DOM.fioInput.value);
 	    const dateTime = this.dateTimeControl.getValue();
+		  console.log('Андрюша, сборка и разборка jsом тут')
 	    const data = {
 	      id: entry.id,
 	      section: this.sectionValue,
-	      name: this.DOM.titleInput.value + " "+this.DOM.fioInput.value + " "+ this.DOM.phoneInput.value,
+	      name: this.DOM.titleInput.value,
 	      phone: this.DOM.phoneInput.value,
 	      fio: this.DOM.fioInput.value,
 			serviceName: this.DOM.serviceNameInput.value,

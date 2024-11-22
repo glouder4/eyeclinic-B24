@@ -398,6 +398,8 @@ class CalendarAjax extends \Bitrix\Main\Engine\Controller
 			$entry = [];
 		}
 
+
+
 		if (!$entryId || (!empty($entry) && \CCalendarSceleton::CheckBitrix24Limits(['id' => $uniqueId])))
 		{
 			$responseParams['uniqueId'] = $uniqueId;
