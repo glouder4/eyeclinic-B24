@@ -1230,11 +1230,17 @@ class CalendarEntryAjax extends \Bitrix\Main\Engine\Controller
             $pre_event_object = $artMaxEmbending::GetByID($id);
         }
 
-        if ($pre_event_object && $is_full_form){
+        /*if ($pre_event_object && $is_full_form){
             $dateFrom = $pre_event_object['DATE_FROM'];
             $dateTo = $pre_event_object['DATE_TO'];
-        }
+        }*/
 
+        if (!str_contains($name, $fio)) {
+            $name .= " ".$fio;
+        }
+        if (!str_contains($name, $phone)) {
+            $name .= " ".$phone;
+        }
 
 		$entryFields = [
 			'ID' => $id,
