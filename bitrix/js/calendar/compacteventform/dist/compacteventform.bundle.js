@@ -1819,7 +1819,6 @@ this.BX = this.BX || {};
 	    const data = {
 	      id: entry.id,
 	      section: this.sectionValue,
-			initialName: this.DOM.initialName.value,
 	      name: this.DOM.titleInput.value,
 			phone: this.DOM.phoneInput.value,
 			fio: this.DOM.fioInput.value,
