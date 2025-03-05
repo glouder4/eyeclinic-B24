@@ -1,6 +1,5 @@
 "use strict";
-import {Loc, Runtime, Type, Uri} from "main.core";
-import { DeletedViewForm } from "calendar.sharing.deletedviewform";
+import { Loc, Runtime, Type, Uri } from "main.core";
 
 export class SliderLoader
 {
@@ -11,7 +10,7 @@ export class SliderLoader
 				Type.isString(entryId)
 				&& (
 					entryId === 'NEW'
-					|| entryId.substr(0, 4) === 'EDIT'
+					|| entryId.substring(0, 4) === 'EDIT'
 				)
 			)
 			|| !parseInt(entryId)
@@ -21,8 +20,8 @@ export class SliderLoader
 
 		this.sliderId = options.sliderId || "calendar:slider-" + Math.random();
 
-		entryId = (Type.isString(entryId) && entryId.substr(0, 4) === 'EDIT')
-			? parseInt(entryId.substr(4))
+		entryId = (Type.isString(entryId) && entryId.substring(0, 4) === 'EDIT')
+			? parseInt(entryId.substring(4))
 			: parseInt(entryId);
 
 		this.extensionParams = {
@@ -73,11 +72,6 @@ export class SliderLoader
 			this.extensionParams.locationCapacity = options.locationCapacity;
 		}
 
-		if (options.dayOfWeekMonthFormat)
-		{
-			this.extensionParams.dayOfWeekMonthFormat = options.dayOfWeekMonthFormat;
-		}
-
 		if (Type.isDate(options.entryDateFrom))
 		{
 			this.extensionParams.entryDateFrom = options.entryDateFrom;
@@ -109,6 +103,16 @@ export class SliderLoader
 		{
 			this.isSharing = true;
 		}
+
+		if (Type.isStringFilled(options.jumpToControl))
+		{
+			this.extensionParams.jumpToControl = options.jumpToControl;
+		}
+
+		if (options.createChatId)
+		{
+			this.extensionParams.createChatId = options.createChatId;
+		}
 	}
 
 	show()
@@ -116,9 +120,7 @@ export class SliderLoader
 		if (this.isSharing)
 		{
 			BX.SidePanel.Instance.open(this.sliderId, {
-				contentCallback: (slider) => new Promise((resolve) => {
-					new DeletedViewForm(this.extensionParams.entryId).initInSlider(slider, resolve);
-				}),
+				contentCallback: this.loadDeletedViewForm.bind(this),
 				width: 600,
 			});
 		}
@@ -135,7 +137,7 @@ export class SliderLoader
 		}
 	}
 
-	loadExtension(slider)
+	loadExtension(slider): Promise
 	{
 		return new Promise((resolve) => {
 			const extensionName = 'calendar.' + this.extensionName.toLowerCase();
@@ -153,6 +155,15 @@ export class SliderLoader
 					console.error(`Extension "calendar.${extensionName}" not found`);
 				}
 			});
+		});
+	}
+
+	async loadDeletedViewForm(slider): Promise
+	{
+		const { DeletedViewForm } = await Runtime.loadExtension('calendar.sharing.deletedviewform');
+
+		return new Promise((resolve) => {
+			new DeletedViewForm(this.extensionParams.entryId).initInSlider(slider, resolve);
 		});
 	}
 }

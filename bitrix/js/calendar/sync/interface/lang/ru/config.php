@@ -144,7 +144,7 @@ $MESS['CAL_SYNC_NEW_EVENT_GOOGLE_TITLE'] = 'Здесь появится созд
 $MESS['CAL_SYNC_NEW_EVENT_ADDED_GOOGLE'] = 'Новое событие из Google Календаря добавлено в календарь Битрикс24';
 $MESS['CAL_SYNC_NEW_EVENT_YOULL_SEE'] = 'Вы увидите его на календарной сетке';
 $MESS['CAL_SYNC_INFO_STATUS_CONNECTED'] = 'Подключено';
-$MESS['CAL_SYNC_INFO_STATUS_ERROR'] = 'Ошибка при синхрониации';
+$MESS['CAL_SYNC_INFO_STATUS_ERROR'] = 'Ошибка при синхронизации';
 $MESS['CAL_SYNC_INFO_STATUS_REFUSED'] = 'Синхронизация с Google Календарём временно недоступна. Мы уже работаем над её восстановлением';
 $MESS['CAL_SYNC_INFO_STATUS_REFUSED_POPUP_TITLE'] = 'Синхронизация Битрикс24 с Google Календарём временно недоступна';
 $MESS['CAL_SYNC_INFO_STATUS_REFUSED_POPUP_TEXT'] = 'До восстановления синхронизации вы можете просматривать ваши рабочие события в Календаре Битрикс24';
@@ -192,4 +192,6 @@ $MESS['CALENDAR_CHECK_GOOGLE_SETTINGS'] = 'Мои настройки Google';
 $MESS['CAL_ERROR_WARN_1'] = 'Не удалось завершить синхронизацию.';
 $MESS['CAL_ERROR_WARN_2'] = 'Попробуйте повторить попытку позже';
 $MESS['CAL_ERROR_CLOSE'] = 'Закрыть';
+$MESS['CAL_BUTTON_STATUS_FAILED_RECONNECT'] = 'Возобновить';
+$MESS['CAL_SYNC_INFO_STATUS_ERROR_RECONNECT'] = 'Синхронизация с календарём #TYPE# временно приостановлена. Возможно, вы сменили пароль';
 ?>

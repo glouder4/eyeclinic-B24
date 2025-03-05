@@ -1,6 +1,6 @@
-import {Util} from 'calendar.util';
-import {EntryManager} from "./entrymanager";
-import { Type } from 'main.core';
+import { Util } from 'calendar.util';
+import { EntryManager } from "./entrymanager";
+import { Type, Loc } from 'main.core';
 
 export {EntryManager};
 
@@ -36,6 +36,14 @@ export class Entry
 		{
 			this.data.DT_SKIP_TIME = this.data.SKIP_TIME ? 'Y' : 'N';
 		}
+		if (!Type.isString(this.data.NAME))
+		{
+			this.data.NAME = Loc.getMessage('CALENDAR_DEFAULT_ENTRY_NAME');
+		}
+		else
+		{
+			this.data.NAME = this.data.NAME.replaceAll(/\r\n|\r|\n/g, ' ');
+		}
 
 		this.fullDay = this.data.DT_SKIP_TIME === 'Y';
 		this.accessibility = this.data.ACCESSIBILITY || 'busy';
@@ -43,9 +51,6 @@ export class Entry
 		this.private = !!this.data.PRIVATE_EVENT;
 		this.setSectionId(this.data.SECT_ID);
 		this.name = this.data.NAME;
-		this.phone = this.data.PHONE;
-		this.fio = this.data.FIO;
-
 
 		this.userTimezoneOffsetFrom = parseInt(this.data['~USER_OFFSET_FROM']) || 0;
 		this.userTimezoneOffsetTo = parseInt(this.data['~USER_OFFSET_TO']) || this.userTimezoneOffsetFrom;
@@ -339,12 +344,6 @@ export class Entry
 		return !!this.data.UF_CRM_CAL_EVENT;
 	}
 
-	isPhone()
-	{
-		return !!this.data.UF_CE_STAFF;
-	}
-
-
 	isFirstReccurentEntry()
 	{
 		return (this.data.DATE_FROM_TS_UTC === Math.floor(BX.parseDate(this.data['~DATE_FROM']).getTime() / 1000) * 1000
@@ -420,10 +419,12 @@ export class Entry
 			if (recursionMode === 'all')
 			{
 				calendarContext.getView().entries.forEach((entry) => {
+					const entryRecurrenceId = parseInt(entry.data.RECURRENCE_ID);
+
 					if (parseInt(entry.id) === this.id
-						|| parseInt(entry.data.RECURRENCE_ID) === this.id
-						|| parseInt(entry.data.RECURRENCE_ID) === parseInt(this.data.RECURRENCE_ID)
-						|| parseInt(entry.id) === parseInt(this.data.RECURRENCE_ID)
+						|| (entryRecurrenceId > 0 && entryRecurrenceId === this.id)
+						|| (entryRecurrenceId > 0 && entryRecurrenceId === parseInt(this.data.RECURRENCE_ID))
+						|| (entryRecurrenceId > 0 && parseInt(entry.id) === parseInt(this.data.RECURRENCE_ID))
 					)
 					{
 						const entryPart = wrap.querySelector('div[data-bx-calendar-entry="' + entry.uid + '"]');
@@ -583,18 +584,6 @@ export class Entry
 		return (this.name || '');
 	}
 
-	getPhone() : string
-	{
-		return (this.data.phone);
-	}
-
-	getFIO() : string
-	{
-		return (this.fio);
-	}
-
-
-
 	getColor()
 	{
 		return this.data.COLOR;
@@ -629,7 +618,7 @@ export class Entry
 
 			const action = 'deleteCalendarEntry';
 			const data = {
-				entryId: this.id,
+				entryId: this.parentId,
 				recursionMode: params.recursionMode || false,
 				requestUid: Util.registerRequestId(),
 			};
@@ -661,7 +650,7 @@ export class Entry
 
 			const action = 'excludeRecursionDate';
 			const data = {
-				entryId: this.id,
+				entryId: this.parentId,
 				recursionMode: recursionMode,
 				excludeDate: this.data.DATE_FROM,
 			};
@@ -699,15 +688,9 @@ export class Entry
 			EntryManager.showDeleteEntryNotification(this);
 			this.deleteParts(recursionMode);
 
-			const calendarContext = Util.getCalendarContext();
-			if (calendarContext)
-			{
-
-			}
-
 			const action = 'changeRecurciveEntryUntil';
 			const data = {
-				entryId: this.id,
+				entryId: this.parentId,
 				recursionMode: recursionMode,
 				untilDate: Util.formatDate(this.from.getTime() - Util.getDayLength()),
 			};
@@ -825,5 +808,9 @@ export class Entry
 			}
 		}
 	}
-}
 
+	isOpenEvent(): boolean
+	{
+		return this.getType() === 'open_event';
+	}
+}

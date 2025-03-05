@@ -1,14 +1,17 @@
 // @flow
 'use strict';
 
-import { Loc, Event } from "main.core";
+import { Loc, Event, Runtime } from "main.core";
 import {InterfaceTemplate} from "./interfacetemplate";
 import Office365SyncWizard from '../syncwizard/office365syncwizard';
 import { Util } from 'calendar.util';
 import { MessageBox } from 'ui.dialogs.messagebox';
+import GoogleSyncWizard from '../syncwizard/googlesyncwizard';
 
 export default class Office365template extends InterfaceTemplate
 {
+	HANDLE_CONNECTION_DELAY = 500;
+
 	constructor(provider, connection = null)
 	{
 		super({
@@ -29,71 +32,38 @@ export default class Office365template extends InterfaceTemplate
 
 		this.sectionStatusObject = {};
 		this.sectionList = [];
+
+		this.handleSuccessConnectionDebounce = Runtime.debounce(this.handleSuccessConnection, this.HANDLE_CONNECTION_DELAY, this)
 	}
 
 	createConnection()
 	{
-		BX.ajax.runAction('calendar.api.calendarajax.analytical', {
-			analyticsLabel: {
-				calendarAction: 'createConnection',
-				click_to_connection_button: 'Y',
-				connection_type: 'office365',
-			}
-		});
+		const syncLink = this.provider.getSyncLink();
+		BX.util.popup(syncLink, 500, 600);
 
-		BX.util.popup(this.provider.getSyncLink(), 500, 600);
-
-		Event.bind(window, 'hashchange', (event) => {
-			if (window.location.hash === '#office365AuthSuccess')
-			{
-				Util.removeHash();
-				this.provider.setWizardSyncMode(true);
-				this.saveConnection();
-				this.openSyncWizard();
-				this.provider.setStatus(this.provider.STATUS_SYNCHRONIZING);
-				this.provider.getInterfaceUnit().refreshButton();
-			}
-		});
+		Event.bind(window, 'hashchange', this.handleSuccessConnectionDebounce);
 	}
 
-	saveConnection()
+	handleSuccessConnection(event)
 	{
-		return new Promise((resolve) => {
-			BX.ajax.runAction('calendar.api.syncajax.createOffice365Connection')
-				.then(
-					(response) => {
-						if (response?.data?.status === this.provider.ERROR_CODE)
-						{
-							this.provider.setStatus(this.provider.STATUS_FAILED);
-							this.provider.setWizardState(
-								{
-									status: this.provider.ERROR_CODE,
-									vendorName: this.provider.type,
-								}
-							);
-						}
-						else if (response?.data?.connectionId)
-						{
-							this.provider.setStatus(this.provider.STATUS_SUCCESS);
-							this.provider.getConnection().setId(response.data.connectionId);
-							this.provider.getConnection().setStatus(true);
-							this.provider.getConnection().setConnected(true);
-							this.provider.getConnection().setSyncDate(new Date());
-						}
-						resolve(response.data);
-					},
-					(response) => {
-						this.provider.setStatus(this.provider.STATUS_FAILED);
-						this.provider.setWizardState(
-							{
-								status: this.provider.ERROR_CODE,
-								vendorName: this.provider.type,
-							}
-						);
-						resolve(response.errors);
-					}
-				);
-		})
+		if (window.location.hash === '#office365AuthSuccess')
+		{
+			Util.removeHash();
+			this.provider.setWizardSyncMode(true);
+
+			this.provider.saveConnection();
+			this.openSyncWizard();
+			this.provider.setStatus(this.provider.STATUS_SYNCHRONIZING);
+			this.provider.getInterfaceUnit().setSyncStatus(this.provider.STATUS_SYNCHRONIZING);
+			this.provider.getInterfaceUnit().refreshButton();
+
+			if (this.provider.isReconnecting())
+			{
+				this.provider.emit('onReconnecting');
+			}
+
+			Event.unbind(window, 'hashchange', this.handleSuccessConnectionDebounce);
+		}
 	}
 
 	onClickCheckSection(event)
@@ -117,7 +87,8 @@ export default class Office365template extends InterfaceTemplate
 
 	openSyncWizard()
 	{
-		this.wizard = new Office365SyncWizard();
+		const mode = this.provider.isStartedReconnecting ? 'reconnect' : 'default';
+		this.wizard = new Office365SyncWizard({ mode });
 		this.wizard.openSlider();
 		this.provider.setActiveWizard(this.wizard);
 	}

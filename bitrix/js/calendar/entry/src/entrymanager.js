@@ -1,4 +1,4 @@
-import { Entry } from 'calendar.entry';
+import { Entry } from './entry';
 import { SectionManager } from 'calendar.sectionmanager';
 import { Util } from 'calendar.util';
 import {Dom, Event, Loc, Tag, Type} from 'main.core';
@@ -24,9 +24,6 @@ export class EntryManager {
 
 		newEntryData.ID = null;
 		newEntryData.NAME = EntryManager.getNewEntryName();
-		newEntryData.FIO = EntryManager.getNewFio();
-		newEntryData.PHONE = EntryManager.getNewPhone();
-
 		newEntryData.dateFrom = dateTime.from;
 		newEntryData.dateTo = dateTime.to;
 		if(options.type === 'location')
@@ -101,25 +98,6 @@ export class EntryManager {
 		EntryManager.newEntryName = newEntryName;
 	}
 
-	static getNewPhone(): string
-	{
-		return (EntryManager.newPhone || '');
-	}
-
-	static setNewPhone(newPhone)
-	{
-		EntryManager.newPhone = newPhone;
-	}
-
-	static getNewFio(): string
-	{
-		return (EntryManager.newFio || '');
-	}
-
-	static setNewFio(newFio)
-	{
-		EntryManager.newFio = newFio;
-	}
 	static showEditEntryNotification(entryId)
 	{
 		Util.showNotification(
@@ -202,17 +180,17 @@ export class EntryManager {
 			new bx.Calendar.SliderLoader(
 				options.entry ? 'EDIT' + options.entry.id : 'NEW',
 				{
-					calendarContext: options.calendarContext,
+					calendarContext: options.calendarContext || bx.Calendar.Util.getCalendarContext(),
 					entry: options.entry || null,
 					type: options.type,
 					isLocationCalendar: options.isLocationCalendar || false,
 					roomsManager: options.roomsManager || null,
 					locationAccess: options.locationAccess || false,
-					dayOfWeekMonthFormat: options.dayOfWeekMonthFormat || false,
 					locationCapacity: options.locationCapacity || 0,
-					ownerId: options.ownerId,
+					ownerId: options.ownerId || 0,
 					userId: options.userId,
-					formDataValue: options.formDataValue || null
+					formDataValue: options.formDataValue || null,
+					jumpToControl: options.jumpToControl,
 				}
 			).show();
 		}
@@ -228,7 +206,6 @@ export class EntryManager {
 				new bx.Calendar.SliderLoader(eventId, {
 					entryDateFrom: options.from,
 					timezoneOffset: options.timezoneOffset,
-					dayOfWeekMonthFormat: options.dayOfWeekMonthFormat || false,
 					calendarContext: options.calendarContext || null,
 					link: options.link,
 				}).show();
@@ -251,10 +228,6 @@ export class EntryManager {
 
 			const deleteHandler = () => {
 				const calendar = Util.getCalendarContext();
-				if (!calendar && !calendarContext)
-				{
-					return Util.getBX().reload();
-				}
 
 				if (calendar)
 				{
@@ -285,7 +258,7 @@ export class EntryManager {
 
 			if (status === 'N' && !params.confirmed)
 			{
-				if (entry.isRecursive())
+				if (entry.isRecursive() && !entry.isOpenEvent())
 				{
 					this.showConfirmStatusDialog(entry, resolve);
 					return false;
@@ -364,7 +337,8 @@ export class EntryManager {
 		{
 			this.confirmEditDialog = this.createConfirmEditDialog();
 		}
-		this.confirmEditDialog.show();
+
+		this.confirmEditDialog.show(options);
 
 		if (Type.isFunction(options.callback))
 		{
@@ -456,7 +430,7 @@ export class EntryManager {
 		{
 			this.limitationEmailDialog = this.createEmailLimitationDialog();
 		}
-		this.limitationEmailDialog.subscribe('onClose', ()=>{
+		this.limitationEmailDialog.subscribe('onSaveWithoutAttendees', () => {
 			if (Type.isFunction(options.callback))
 			{
 				options.callback();
@@ -541,6 +515,13 @@ export class EntryManager {
 
 	handlePullChanges(params)
 	{
+		if (['edit_event_location', 'delete_event_location'].includes(params.command))
+		{
+			top.BX.Calendar?.Controls?.Location?.handlePull(params);
+
+			return;
+		}
+
 		if (!BX.Calendar.Util.checkRequestId(params.requestUid))
 		{
 			return;
@@ -578,7 +559,8 @@ export class EntryManager {
 		{
 			top.BX.Event.EventEmitter.emit('BX.Calendar:doReloadCounters');
 		}
-		else if (params.command === 'delete_event' || params.command === 'edit_event')
+
+		if (params.command === 'delete_event' || params.command === 'edit_event')
 		{
 			if (
 				!params.fields
@@ -587,11 +569,6 @@ export class EntryManager {
 			)
 			{
 				top.BX.Event.EventEmitter.emit('BX.Calendar:doReloadCounters');
-			}
-
-			if (params?.fields?.CAL_TYPE === 'location' && top.BX.Calendar?.Controls?.Location)
-			{
-				top.BX.Calendar.Controls.Location.handlePull(params);
 			}
 		}
 
@@ -727,34 +704,55 @@ export class EntryManager {
 		Util.setUserSettings(userSettings);
 	}
 
-	//this is because extensions cant be loaded in iframe with import
+	// this is because extensions cant be loaded in iframe with import
 	static createConfirmEditDialog()
 	{
 		const bx = Util.getBX();
+
 		return new bx.Calendar.Controls.ConfirmEditDialog();
 	}
 
 	static createConfirmStatusDialog()
 	{
 		const bx = Util.getBX();
+
 		return new bx.Calendar.Controls.ConfirmStatusDialog();
 	}
 
 	static createReinviteUserDialog()
 	{
 		const bx = Util.getBX();
+
 		return new bx.Calendar.Controls.ReinviteUserDialog();
 	}
 
 	static createConfirmedEmailDialog()
 	{
 		const bx = Util.getBX();
+
 		return new bx.Calendar.Controls.ConfirmedEmailDialog();
 	}
 
 	static createEmailLimitationDialog()
 	{
 		const bx = Util.getBX();
+
 		return new bx.Calendar.Controls.EmailLimitationDialog();
+	}
+
+	static async downloadIcs(eventId: number): void
+	{
+		const { status, data } = await Util.getBX().ajax.runAction('calendar.api.calendarentryajax.getIcsContent', {
+			data: {
+				eventId,
+			},
+		});
+
+		if (status !== 'success')
+		{
+			return;
+		}
+
+		Util.downloadIcsFile(data, 'event');
 	}
 }

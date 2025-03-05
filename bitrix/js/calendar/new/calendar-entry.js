@@ -171,7 +171,6 @@
 
 			this.sentRequests.push(this.REQUEST_MOVE_EVENT);
 			return new Promise((resolve) => {
-
 				BX.ajax.runAction('calendar.api.calendarentryajax.moveEvent', {
 					data: {
 						id: entry.id,
@@ -504,13 +503,39 @@
 		{
 			const entries = [];
 			const activeSectionIndex = this.getActiveSectionsIndex();
+
+			const entriesColors = {};
+			this.entriesRaw.forEach((entryRaw) => {
+				if (!entryRaw.COLOR)
+				{
+					return;
+				}
+
+				entriesColors[entryRaw.ID] ??= {};
+				entriesColors[entryRaw.ID][entryRaw.COLOR] ??= 0;
+				entriesColors[entryRaw.ID][entryRaw.COLOR]++;
+			});
+			this.entriesRaw.forEach((entryRaw) => {
+				if (!entryRaw.COLOR)
+				{
+					return;
+				}
+
+				const colors = entriesColors[entryRaw.ID];
+
+				entryRaw.COLOR = Object.keys(colors).reduce((a, b) => colors[a] < colors[b] ? a : b);
+			});
+
 			for (const entryRaw of this.entriesRaw)
 			{
 				if ((entryRaw['~TYPE'] === 'tasks' && !activeSectionIndex['tasks'])
 					|| (entryRaw['~TYPE'] !== 'tasks' && entryRaw['SECT_ID'] && !activeSectionIndex[parseInt(entryRaw['SECT_ID'])])
 				)
 				{
-					continue;
+					if (entryRaw['CAL_TYPE'] !== 'open_event')
+					{
+						continue;
+					}
 				}
 
 				const movedEntry = this.findMovedEntry(entryRaw);
@@ -634,7 +659,7 @@
 				return a.entry.from.getTime() - b.entry.from.getTime();
 			}
 
-			return a.part.daysCount - b.part.daysCount;
+			return b.part.daysCount - a.part.daysCount;
 		},
 
 		clearLoadIndexCache: function()
@@ -682,6 +707,15 @@
 			this.data.DT_SKIP_TIME = this.data.SKIP_TIME ? 'Y' : 'N';
 		}
 
+		if (!BX.Type.isString(this.data.NAME))
+		{
+			this.data.NAME = BX.message('EC_DEFAULT_ENTRY_NAME');
+		}
+		else
+		{
+			this.data.NAME = this.data.NAME.replaceAll(/\r\n|\r|\n/g, ' ');
+		}
+
 		this.fullDay = data.DT_SKIP_TIME === 'Y';
 		this.parentId = data.PARENT_ID || 0;
 		this.accessibility = data.ACCESSIBILITY;
@@ -692,9 +726,6 @@
 			? this.calendar.roomsManager.getRoomName(data.SECT_ID) + ': ' + data.NAME
 			: data.NAME
 		;
- 	        // Corte
-		this.phone = data.PHONE;
-		this.fio = data.FIO;
 
 		this.parts = [];
 
@@ -913,6 +944,21 @@
 			return this.data['EVENT_TYPE'] === '#shared#' || this.data['EVENT_TYPE'] === '#shared_crm#';
 		},
 
+		isCollabEvent: function()
+		{
+			return this.data['EVENT_TYPE'] === '#collab#';
+		},
+
+		isSharingCollabEvent: function()
+		{
+			return this.data['EVENT_TYPE'] === '#shared_collab#';
+		},
+
+		getCollabId: function()
+		{
+			return this.data['COLLAB_ID'] || null;
+		},
+
 		isInvited: function()
 		{
 			return this.getCurrentStatus() === 'Q';
@@ -930,7 +976,7 @@
 
 		isLongWithTime: function()
 		{
-			return !this.fullDay && this.calendar.util.getDayCode(this.from) != this.calendar.util.getDayCode(this.to);
+			return !this.fullDay && this.calendar.util.getDayCode(this.from) !== this.calendar.util.getDayCode(this.to);
 		},
 
 		isExpired: function()
@@ -981,12 +1027,6 @@
 			return !!this.data.UF_CRM_CAL_EVENT;
 		},
 
-		isPhone: function()
-		{
-			return !!this.data.UF_CE_STAFF;
-		},
-
-
 		isFirstReccurentEntry: function()
 		{
 			return (this.data.DATE_FROM_TS_UTC === Math.floor(BX.parseDate(this.data['~DATE_FROM']).getTime() / 1000) * 1000
@@ -1009,17 +1049,6 @@
 		{
 			return this.data.RRULE;
 		},
-		/// Corte
-		getPhone: function()
-		{
-			return this.PHONE;
-		},
-
-		getFIO: function()
-		{
-			return this.data.FIO;
-		},
-
 
 		hasRecurrenceId: function()
 		{
@@ -1092,20 +1121,22 @@
 			{
 				this.data.REMIND.forEach(function (remind)
 				{
-					if (remind.type == 'min')
+					if (remind.type === 'min')
 					{
 						res.push(remind.count);
 					}
-					else if (remind.type == 'hour')
+					else if (remind.type === 'hour')
 					{
-						res.push(parseInt(remind.count) * 60);
+						res.push(Number(remind.count) * 60);
 					}
-					if (remind.type == 'day')
+
+					if (remind.type === 'day')
 					{
-						res.push(parseInt(remind.count) * 60 * 24);
+						res.push(Number(remind.count) * 60 * 24);
 					}
 				});
 			}
+
 			return res;
 		},
 
@@ -1121,7 +1152,12 @@
 		getColor: function()
 		{
 			return this.color;
-		}
+		},
+
+		isOpenEvent: function()
+		{
+			return this.data.CAL_TYPE === 'open_event';
+		},
 	};
 
 	if (window.BXEventCalendar)

@@ -1,4 +1,5 @@
-<?
+<?php
+
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
 {
 	die();
@@ -18,9 +19,11 @@ return [
 		'calendar.util',
 		'calendar.entry',
 		'main.core',
-		'viewer',
 		'main.core.events',
 		'calendar.sectionmanager',
+		'viewer',
+		'calendar.entityrelation',
+		'ui.avatar',
 	],
 	'skip_core' => false,
 	'lang' => '/bitrix/modules/calendar/classes/general/calendar_js.php'

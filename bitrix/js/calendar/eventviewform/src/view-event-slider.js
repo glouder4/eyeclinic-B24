@@ -15,9 +15,8 @@ export const ViewEventSlider = {
 	data() {
 		return {
 			id: this.params.id,
-			eventId: parseInt(this.params.eventId),
+			eventId: parseInt(this.params.eventId, 10),
 			name: this.params.name,
-			phone: this.param.phone,
 			description: this.params.description,
 			timezoneHint: this.params.timezoneHint,
 			timezone: this.params.userTimezone,
@@ -28,14 +27,17 @@ export const ViewEventSlider = {
 			meetingHostWorkPosition: this.params.meetingHostWorkPosition,
 			avatarSize: this.params.avatarSize,
 			attendees: this.params.attendees,
-			userList: {y : [], i: [], q: [], n: []},
+			avatarUsers: [],
+			avatarMoreUsers: [],
+			avatarMoreCount: 0,
+			userList: { y: [], i: [], q: [], n: [] },
 			curUserStatus: this.params.curUserStatus,
 			meetingCreatorUrl: this.params.meetingCreatorUrl,
 			meetingCreatorDisplayName: this.params.meetingCreatorDisplayName,
+			meetingCreatorCollabUser: this.params.meetingCreatorCollabUser,
 			isRemind: this.params.isRemind,
 			isWebdavEvent: this.params.isWebdavEvent,
 			isCrmEvent: this.params.isCrmEvent,
-			
 			isHighImportance: this.params.isHighImportance,
 			isRrule: this.params.isRrule,
 			rruleDescription: this.params.rruleDescription,
@@ -45,6 +47,9 @@ export const ViewEventSlider = {
 			isPrivate: this.params.isPrivate,
 			location: this.params.location,
 			canEditCalendar: this.params.canEditCalendar,
+			downloadIcsEnabled: this.params.downloadIcsEnabled,
+			canAttendeeEditCalendar: this.params.canAttendeeEditCalendar,
+			canDeleteEvent: this.params.canDeleteEvent,
 			showComments: this.params.showComments,
 			filesView: this.getComponentHTML(this.params.filesView),
 			crmView: this.getComponentHTML(this.params.crmView),
@@ -54,7 +59,7 @@ export const ViewEventSlider = {
 			updateParamsDebounce: Runtime.debounce(this.updateParams, 500, this),
 			hasPulls: false,
 			backgroundPullEvent: null,
-		}
+		};
 	},
 	created()
 	{
@@ -75,6 +80,8 @@ export const ViewEventSlider = {
 			}
 			Event.bind(document, 'visibilitychange', this.handleBackgroundPulls);
 		}
+		Event.bind(this.$refs.sliderDetailContent, 'mouseup', this.quote);
+		EventEmitter.subscribe('AI.Copilot.Menu:open', this.handleCopilotMenuShow);
 	},
 	beforeMount()
 	{
@@ -90,7 +97,19 @@ export const ViewEventSlider = {
 		{
 			EventEmitter.unsubscribe('onPullEvent-calendar', this.handlePullEvent);
 			EventEmitter.unsubscribe(`MeetingStatusControl_${this.id}:onSetStatus`, this.handleStatusUpdate);
+			Event.unbind(this.$refs.sliderDetailContent, 'mouseup', this.quote);
+			EventEmitter.unsubscribe('AI.Copilot.Menu:open', this.handleCopilotMenuShow);
 		}
+	},
+	computed: {
+		authorNodeId()
+		{
+			return this.id + '_detail-author-info';
+		},
+		meetingCreatorClassName(): string
+		{
+			return `calendar-slider-sidebar-user-info-name${this.meetingCreatorCollabUser ? ' calendar-collab-user' : ''}`;
+		},
 	},
 	methods: {
 		getComponentHTML(json)
@@ -99,6 +118,7 @@ export const ViewEventSlider = {
 			{
 				return '';
 			}
+
 			return JSON.parse(json).data.html;
 		},
 		loadCommentsView()
@@ -106,8 +126,8 @@ export const ViewEventSlider = {
 			BX.ajax.runAction('calendar.api.calendareventviewform.getCommentsView', {
 				data: {
 					signedEvent: this.params.signedEvent,
-				}
-			}).then(response => {
+				},
+			}).then((response) => {
 				const commentsElement = document.createElement('div');
 				commentsElement.innerHTML = response.data.html;
 				this.$refs.commentsView.appendChild(commentsElement);
@@ -120,7 +140,7 @@ export const ViewEventSlider = {
 			{
 				return;
 			}
-			//run scripts
+			// run scripts
 			const scripts = element.querySelectorAll('script');
 			for (const script of scripts)
 			{
@@ -129,12 +149,16 @@ export const ViewEventSlider = {
 				script.parentNode.appendChild(s);
 				script.remove();
 			}
-			//remove script elements
+			// remove script elements
 			// element.querySelectorAll('script').forEach(e => e.remove());
+		},
+		quote(e)
+		{
+			window.mplCheckForQuote(e, e.currentTarget, `EVENT_${this.eventId}`, this.authorNodeId);
 		},
 		updateUserList()
 		{
-			this.userList = {y : [], i: [], q: [], n: []};
+			this.userList = { y: [], i: [], q: [], n: [] };
 			if (this.entry.isMeeting())
 			{
 				this.entry.getAttendees().forEach(function(user) {
@@ -147,6 +171,37 @@ export const ViewEventSlider = {
 						this.userList[user.STATUS.toLowerCase()].push(user);
 					}
 				}, this);
+			}
+
+			const accepted = this.attendees.y?.filter((attendee) => {
+				if (!attendee)
+				{
+					return false;
+				}
+
+				if (this.entry?.isOpenEvent())
+				{
+					return true;
+				}
+
+				return parseInt(this.meetingHost.ID, 10) !== parseInt(attendee.ID, 10);
+			}) ?? [];
+
+			if (accepted.length <= 11)
+			{
+				this.avatarUsers = accepted.slice(0, 11);
+				this.avatarMoreUsers = [];
+			}
+			else
+			{
+				this.avatarUsers = accepted.slice(0, 10);
+				this.avatarMoreUsers = accepted.slice(10);
+			}
+
+			this.avatarMoreCount = this.avatarMoreUsers.length;
+			if (this.avatarMoreCount >= 1000)
+			{
+				this.avatarMoreCount = `${parseInt(this.avatarMoreUsers.length / 1000, 10)}K`;
 			}
 		},
 		reloadPlanner()
@@ -162,7 +217,7 @@ export const ViewEventSlider = {
 				dateTo: Util.formatDate(this.entry.to.getTime() + Util.getDayLength() * 10),
 				timezone: this.timezone,
 				location: this.entry.getLocation(),
-				entry: this.entry
+				entry: this.entry,
 			};
 			this.reloadPlannerCallback(plannerData);
 		},
@@ -177,11 +232,12 @@ export const ViewEventSlider = {
 		handleStatusUpdate(event)
 		{
 			this.entry.data.MEETING_STATUS = event.getData().status;
+			this.curUserStatus = this.entry.data.MEETING_STATUS;
 			this.isInvited = this.entry.isInvited();
 		},
 		handlePullEvent(event: BaseEvent)
 		{
-			if (event.data[0] === "refresh_sync_status")
+			if (event.data[0] === 'refresh_sync_status')
 			{
 				return;
 			}
@@ -204,9 +260,10 @@ export const ViewEventSlider = {
 		},
 		updateParams(event: BaseEvent)
 		{
-			if (parseInt(event.data[1].fields.PARENT_ID) !== parseInt(this.params.parentId))
+			if (parseInt(event.data[1].fields.PARENT_ID, 10) !== parseInt(this.params.parentId, 10))
 			{
 				this.reloadPlanner();
+
 				return;
 			}
 			const pullData = event.data[1].fields;
@@ -219,8 +276,8 @@ export const ViewEventSlider = {
 					entryId: this.eventId,
 					dateFrom: Util.formatDate(pullData.DATE_FROM),
 					timezoneOffset: pullData.TZ_OFFSET_FROM
-				}
-			}).then(response => {
+				},
+			}).then((response) => {
 				const newData = response.data;
 
 				this.description = newData.description;
@@ -235,6 +292,7 @@ export const ViewEventSlider = {
 				this.attendees = newData.attendees;
 				this.meetingCreatorUrl = newData.meetingCreatorUrl;
 				this.meetingCreatorDisplayName = newData.meetingCreatorDisplayName;
+				this.meetingCreatorCollabUser = newData.meetingCreatorCollabUser;
 				this.isRemind = newData.isRemind;
 				this.isWebdavEvent = newData.isWebdavEvent;
 				this.isCrmEvent = newData.isCrmEvent;
@@ -246,12 +304,14 @@ export const ViewEventSlider = {
 				this.isPrivate = newData.isPrivate;
 				this.location = newData.location;
 				this.canEditCalendar = newData.canEditCalendar;
+				this.canAttendeeEditCalendar = newData.canAttendeeEditCalendar;
+				this.canDeleteEvent = newData.canDeleteEvent;
 				this.showComments = newData.showComments;
 				this.filesView = this.getComponentHTML(newData.filesView);
 				if (this.filesView)
 				{
-					//wait for div element created
-					setTimeout(() => {this.executeScripts(this.$refs.filesView)}, 1000);
+					// wait for div element created
+					setTimeout(() => { this.executeScripts(this.$refs.filesView); }, 1000);
 				}
 				this.crmView = this.getComponentHTML(newData.crmView);
 				this.entry = new Entry({data: newData.entry, userIndex: newData.userIndex});
@@ -259,6 +319,20 @@ export const ViewEventSlider = {
 				this.updateUserList();
 				this.reloadPlanner();
 			});
+		},
+		handleCopilotMenuShow()
+		{
+			const copilotPopups = [...document.querySelectorAll('.ai__copilot-menu-popup')];
+			const menu = copilotPopups.find((popup) => popup.offsetHeight > 0);
+
+			const offset = menu.getBoundingClientRect().bottom - this.$refs.comments.getBoundingClientRect().bottom;
+
+			const marginBottom = parseInt(this.$refs.comments.style.marginBottom, 10);
+
+			if ((isNaN(marginBottom) && offset > 0) || (!isNaN(marginBottom) && marginBottom < offset))
+			{
+				this.$refs.comments.style.marginBottom = `${offset}px`;
+			}
 		},
 		highlightChange(element)
 		{
@@ -274,7 +348,7 @@ export const ViewEventSlider = {
 				element.style.opacity = savedOpacity;
 				setTimeout(() => { element.style.transition = savedTransition; }, 1000);
 			}, 100);
-		}
+		},
 	},
 	watch: {
 		name: { handler(newValue, oldValue) { this.highlightChange(this.$refs.highlightName); } },
@@ -327,30 +401,48 @@ export const ViewEventSlider = {
 								</div>
 							</div>
 							<div class="calendar-slider-sidebar-layout-main">
-								
 								<div class="calendar-slider-sidebar-user-block">
 								<div v-if="isMeeting">
-									<div class="calendar-slider-sidebar-user-container">
-										<div class="calendar-slider-sidebar-user-block-avatar">
-											<a :href="meetingHost.URL">
-												<UserAvatar :user="meetingHost" :avatarSize="avatarSize"/>
-												<div class="calendar-slider-sidebar-user-icon-top"></div>
-												<div class="calendar-slider-sidebar-user-icon-bottom"></div>
-											</a>
+									<div class="calendar-slider-sidebar-user-container-holder">
+										<div class="calendar-slider-sidebar-user-container" v-if="!entry.isOpenEvent()">
+											<div class="calendar-slider-sidebar-user-block-avatar">
+												<a :href="meetingHost.URL">
+													<UserAvatar :user="meetingHost" :avatarSize="avatarSize"/>
+													<div class="calendar-slider-sidebar-user-icon-top"></div>
+													<div class="calendar-slider-sidebar-user-icon-bottom"></div>
+												</a>
+											</div>
 										</div>
-									</div>
-									<div class="calendar-slider-sidebar-user-container" v-for="att in attendees.y.slice(0,10)">
-										<div class="calendar-slider-sidebar-user-block-avatar" v-if="meetingHost.ID != att.ID">
-											<a :href="att.URL">
-												<UserAvatar :user="att" :avatarSize="avatarSize"/>
-												<div class="calendar-slider-sidebar-user-icon-bottom"></div>
-											</a>
+										<div
+											class="calendar-slider-sidebar-user-container"
+											v-for="att in avatarUsers"
+										>
+											<div class="calendar-slider-sidebar-user-block-avatar">
+												<a :href="att.URL">
+													<UserAvatar :user="att" :avatarSize="avatarSize"/>
+													<div class="calendar-slider-sidebar-user-icon-bottom"></div>
+												</a>
+											</div>
+										</div>
+										<div
+											v-if="avatarMoreUsers.length > 0"
+											class="calendar-slider-sidebar-user-more-container" ref="attendeesMore"
+											@click="showUserListPopupCallback($refs.attendeesMore, avatarMoreUsers)"
+										>
+											<div class="calendar-slider-sidebar-user-more">
+												+{{avatarMoreCount}}
+											</div>
 										</div>
 									</div>
 									<div class="calendar-slider-sidebar-row calendar-slider-sidebar-border-bottom" v-if="meetingCreatorUrl">
 										<div class="calendar-slider-sidebar-string-name">{{$Bitrix.Loc.getMessage('EC_VIEW_CREATED_BY')}}:</div>
 										<div class="calendar-slider-sidebar-string-value">
-											<a :href="meetingCreatorUrl" class="calendar-slider-sidebar-user-info-name">{{meetingCreatorDisplayName}}</a>
+											<a
+												:href="meetingCreatorUrl"
+												:class="meetingCreatorClassName"
+											>
+												{{meetingCreatorDisplayName}}
+											</a>
 										</div>
 									</div>
 								</div>
@@ -366,7 +458,7 @@ export const ViewEventSlider = {
 										<div class="calendar-slider-sidebar-user-info-status" v-if="meetingHostWorkPosition">{{meetingHostWorkPosition}}</div>
 									</div>
 								</div>
-								
+
 							</div>
 								<div class="calendar-slider-sidebar-user-social calendar-slider-sidebar-border-bottom" v-if="isMeeting">
 								<div class="calendar-slider-sidebar-user-social-left">
@@ -410,7 +502,7 @@ export const ViewEventSlider = {
 									</div>
 								</div>
 							</div>
-								
+
 							</div>
 						</div>
 						<div class="calendar-slider-sidebar-layout-main calendar-slider-sidebar-border-bottom calendar-slider-sidebar-remind" v-if="isRemind">
@@ -426,7 +518,7 @@ export const ViewEventSlider = {
 							<div class="calendar-slider-sidebar-string-name">{{$Bitrix.Loc.getMessage('EC_T_REPEAT')}}:</div>
 							<div class="calendar-slider-sidebar-string-value">{{rruleDescription}}</div>
 						</div>
-						
+
 					</div>
 					<div class="calendar-slider-sidebar-copy" style="display: none;">
 						<span class="calendar-slider-sidebar-copy-link">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_COPY_LINK')}}</span>
@@ -445,11 +537,17 @@ export const ViewEventSlider = {
 								</div>
 							</div>
 
-							<div class="calendar-slider-detail-content">
+							<div class="calendar-slider-detail-content" ref="sliderDetailContent">
+								<span
+									class="calendar-detail-author-info"
+									:id="authorNodeId"
+									:bx-post-author-id="meetingHost.ID"
+								>
+									{{meetingCreatorDisplayName ?? meetingHostDisplayName}}
+								</span>
 								<div id="calendar-slider-detail-description" class="calendar-slider-detail-description" v-if="description"
 									 ref="highlightDescription" v-html="description">
 								</div>
-								
 
 								<div class="calendar-slider-detail-files" :id="id + '_' + eventId + '_files_wrap'" v-if="isWebdavEvent">
 									<div v-html="filesView" ref="filesView"></div>
@@ -458,6 +556,8 @@ export const ViewEventSlider = {
 								<div class="calendar-slider-detail-timeline hidden" :id="id + '_view_planner_wrap'">
 									<div class="calendar-view-planner-wrap"></div>
 								</div>
+
+								<div class="calendar-slider-detail-relation" :id="id + '_view_relation_wrap'"/>
 
 								<div class="calendar-slider-detail-option">
 									<div class="calendar-slider-detail-option-block" v-if="isCrmEvent" ref="highlightCrmView">
@@ -471,7 +571,7 @@ export const ViewEventSlider = {
 										<div class="calendar-slider-detail-option-name">{{$Bitrix.Loc.getMessage('EC_ACCESSIBILITY_TITLE')}}:</div>
 										<div class="calendar-slider-detail-option-value">{{$Bitrix.Loc.getMessage('EC_ACCESSIBILITY_' + accessibility.toUpperCase())}}</div>
 									</div>
-									
+
 									<div class="calendar-slider-detail-option-block" v-if="isPrivate && isIntranetEnabled">
 										<div class="calendar-slider-detail-option-name">{{$Bitrix.Loc.getMessage('EC_EDDIV_SPECIAL_NOTES')}}:</div>
 										<div class="calendar-slider-detail-option-value">{{$Bitrix.Loc.getMessage('EC_PRIVATE_EVENT')}}</div>
@@ -490,26 +590,32 @@ export const ViewEventSlider = {
 										<input type="hidden" :id="id + '_current_status'" :value="curUserStatus"/>
 										<span :id="id + '_status_buttonset'"></span>
 
-										<div v-if="canEditCalendar">
-											<button :id="id + '_but_edit'" class="ui-btn ui-btn-light-border">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_EDIT')}}</button>
-											<button :id="id + '_but_del'" class="ui-btn ui-btn-light-border">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_DEL')}}</button>
+										<div>
+											<button v-show="canEditCalendar || (canAttendeeEditCalendar && ['H', 'Y'].includes(curUserStatus))" :id="id + '_but_edit'" class="ui-btn ui-btn-light-border">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_EDIT')}}</button>
+											<button
+												v-show="downloadIcsEnabled"
+												:id="id + '_but_download'"
+												class="ui-btn ui-btn-light-border"
+											>
+												{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_DOWNLOAD')}}
+											</button>
+											<button v-if="canDeleteEvent" :id="id + '_but_del'" class="ui-btn ui-btn-light-border">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_DEL')}}</button>
 										</div>
-										
 									</div>
 								</div>
 							</div>
 						</div>
-						
-						<div class="calendar-slider-comments" v-if="showComments">
+
+						<div class="calendar-slider-comments" v-if="showComments" ref="comments">
 							<div class="calendar-slider-comments-title">{{$Bitrix.Loc.getMessage('EC_VIEW_SLIDER_COMMENTS')}}</div>
 							<div class="calendar-slider-comments-main" :id="id + 'comments-cont'" style="opacity: 1;">
 								<div ref="commentsView"></div>
 							</div>
 						</div>
-						
+
 					</div>
 				</div>
 			</div>
 		</div>
-	`
+	`,
 };

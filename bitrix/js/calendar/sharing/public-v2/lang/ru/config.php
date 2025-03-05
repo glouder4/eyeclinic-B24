@@ -1,7 +1,9 @@
 <?php
 
 $MESS['CALENDAR_SHARING_MY_FREE_SLOTS'] = 'Это мои свободные слоты';
+$MESS['CALENDAR_SHARING_GROUP_FREE_SLOTS'] = 'Это свободные слоты';
 $MESS['CALENDAR_SHARING_YOU_CAN_CHOOSE_FREE_MEETING_TIME'] = 'Здесь вы можете выбрать удобное время для встречи';
+$MESS['CALENDAR_SHARING_GROUP_YOU_CAN_CHOOSE_FREE_MEETING_TIME'] = 'Здесь вы можете выбрать удобное время для встречи';
 $MESS['CALENDAR_SHARING_SELECT_SLOT'] = 'Выбрать слот';
 $MESS['CALENDAR_SHARING_NAV_PREV'] = ' Предыдущий месяц';
 $MESS['CALENDAR_SHARING_NAV_NEXT'] = 'Следующий месяц';
@@ -32,3 +34,23 @@ $MESS['CALENDAR_SHARING_POPUP_MEETING_CANCELED'] = 'Отменить встре�
 $MESS['CALENDAR_SHARING_POPUP_MEETING_CANCELED_INFO'] = 'После отмены встречи этот слот могут занять';
 $MESS['CALENDAR_SHARING_POPUP_LEAVE'] = 'Оставить';
 $MESS['CALENDAR_SHARING_POPUP_CANCEL'] = 'Да, отменить';
+$MESS['CALENDAR_SHARING_WIDGET_DATE_FULL_DAY'] = 'Весь день';
+$MESS['CALENDAR_SHARING_WIDGET_DATE_EVENT_START'] = 'С #DATE#';
+$MESS['CALENDAR_SHARING_WIDGET_DATE_EVENT_END'] = 'По #DATE#';
+$MESS['CALENDAR_SHARING_MEETING_HAS_MORE_USERS'] = 'Со мной на встрече будут';
+$MESS['CALENDAR_SHARING_MEETING_GROUP_ATTENDEES'] = 'На встрече будут';
+$MESS['CALENDAR_SHARING_MEETING_ATTENDEES'] = 'Участники';
+$MESS['CALENDAR_SHARING_MEETING_LOCATION'] = 'Место проведения';
+$MESS['CALENDAR_SHARING_MEETING_DESCRIPTION'] = 'Описание встречи';
+$MESS['CALENDAR_SHARING_MEETING_FILES'] = 'Файлы';
+$MESS['CALENDAR_SHARING_EXPAND'] = 'Развернуть';
+$MESS['CALENDAR_SHARING_COLLAPSE'] = 'Свернуть';
+$MESS['CALENDAR_SHARING_MEETING_YOU_LABEL'] = '(Это вы)';
+$MESS['CALENDAR_SHARING_TIMEZONE_NOTICE'] = 'У владельца календаря другой часовой пояс (#OFFSET#), поэтому время, которое вы видите, может быть не совсем удобным.';
+$MESS['CALENDAR_SHARING_EVENT_TIMEZONE_NOTICE'] = 'Автор встречи в другом часовом поясе';
+$MESS['CALENDAR_SHARING_EVENT_TIMEZONE_NOTICE_OFFSET'] = '#OFFSET# к вашему времени';
+$MESS['CALENDAR_SHARING_TIMEZONE_NOTICE_OFFSET'] = 'Слоты показаны по вашему времени';
+$MESS['CALENDAR_SHARING_UNDERSTAND'] = 'Понятно';
+$MESS['CALENDAR_SHARING_ACCEPT'] = 'Участвовать';
+$MESS['CALENDAR_SHARING_DECLINE'] = 'Отказаться';
+$MESS['CALENDAR_SHARING_DECISION_DECLINE_MEETING'] = 'Отказаться от встречи';

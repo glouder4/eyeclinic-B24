@@ -10,6 +10,7 @@ export class Office365Provider extends ConnectionProvider
 			status: options.syncInfo.status || false,
 			connected: options.syncInfo.connected || false,
 			userName: options.syncInfo.userName || options.syncInfo.connectionName || '',
+			connectionOriginalName: options.syncInfo.connectionName || '',
 			gridTitle: Loc.getMessage('CALENDAR_TITLE_OFFICE365'),
 			gridColor: '#fc1d1d',
 			gridIcon: '/bitrix/images/calendar/sync/office365.svg',
@@ -28,6 +29,11 @@ export class Office365Provider extends ConnectionProvider
 		this.setConnections();
 	}
 
+	doSupportReconnectionScenario(): boolean
+	{
+		return true;
+	}
+
 	getSyncLink()
 	{
 		return this.syncLink;
@@ -38,14 +44,43 @@ export class Office365Provider extends ConnectionProvider
 		return this.isSetSyncOffice365Settings;
 	}
 
-	removeConnection(id)
+	saveConnection()
 	{
-		BX.ajax.runAction('calendar.api.syncajax.deactivateConnection', {
-			data: {
-				connectionId: id
-			}
-		}).then(() => {
-			BX.reload();
-		});
+		return new Promise((resolve) => {
+			BX.ajax.runAction('calendar.api.syncajax.createOffice365Connection')
+				.then(
+					(response) => {
+						if (response?.data?.status === this.provider.ERROR_CODE)
+						{
+							this.setStatus(this.provider.STATUS_FAILED);
+							this.setWizardState(
+								{
+									status: this.provider.ERROR_CODE,
+									vendorName: this.provider.type,
+								}
+							);
+						}
+						else if (response?.data?.connectionId)
+						{
+							this.setStatus(this.provider.STATUS_SUCCESS);
+							this.getConnection().setId(response.data.connectionId);
+							this.getConnection().setStatus(true);
+							this.getConnection().setConnected(true);
+							this.getConnection().setSyncDate(new Date());
+						}
+						resolve(response.data);
+					},
+					(response) => {
+						this.setStatus(this.provider.STATUS_FAILED);
+						this.setWizardState(
+							{
+								status: this.provider.ERROR_CODE,
+								vendorName: this.provider.type,
+							}
+						);
+						resolve(response.errors);
+					}
+				);
+		})
 	}
 }

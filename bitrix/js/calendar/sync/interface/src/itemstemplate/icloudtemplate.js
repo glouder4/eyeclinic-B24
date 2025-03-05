@@ -8,6 +8,7 @@ import IcloudAuthDialog from '../controls/icloudauthdialog';
 import IcloudSyncWizard from '../syncwizard/icloudsyncwizard';
 import { EventEmitter } from 'main.core.events';
 import WarnSyncIcloudDialog from '../controls/warnsynciclouddialog';
+import GoogleSyncWizard from '../syncwizard/googlesyncwizard';
 
 export default class IcloudTemplate extends InterfaceTemplate
 {
@@ -35,6 +36,9 @@ export default class IcloudTemplate extends InterfaceTemplate
 
 	createConnection(data)
 	{
+		this.provider.setWizardSyncMode(true);
+		this.provider.getInterfaceUnit().setSyncStatus(this.provider.STATUS_SYNCHRONIZING);
+
 		BX.ajax.runAction('calendar.api.syncajax.createIcloudConnection', {
 			data: {
 				appleId: data.appleId,
@@ -47,22 +51,10 @@ export default class IcloudTemplate extends InterfaceTemplate
 				if (result.status === 'success' && result.connectionId)
 				{
 					this.openSyncWizard(data.appleId);
-					this.syncCalendarsWithIcloud(result.connectionId);
+					void this.syncCalendarsWithIcloud(result.connectionId);
 				}
 			},
-			(response) => {
-				const result = response.data;
-				if (result.status === 'incorrect_app_pass')
-				{
-					BX.ajax.runAction('calendar.api.calendarajax.analytical', {
-						analyticsLabel: {
-							calendarAction: 'createConnection',
-							wrong_app_pass: 'Y',
-							connection_type: 'icloud'
-						}
-					});
-					
-				}
+			() => {
 				this.authDialog.showErrorAuthorizationAlert();
 			}
 		);
@@ -80,6 +72,7 @@ export default class IcloudTemplate extends InterfaceTemplate
 			}).then(
 				(response) => {
 					this.provider.setStatus(this.provider.STATUS_SUCCESS);
+					this.provider.getInterfaceUnit().setSyncStatus(this.provider.STATUS_SUCCESS);
 					if (connectionId)
 					{
 						this.provider.getConnection().setId(connectionId);
@@ -132,14 +125,6 @@ export default class IcloudTemplate extends InterfaceTemplate
 
 	handleConnectButton()
 	{
-		BX.ajax.runAction('calendar.api.calendarajax.analytical', {
-			analyticsLabel: {
-				calendarAction: 'createConnection',
-				click_to_connection_button: 'Y',
-				connection_type: 'icloud',
-			}
-		});
-		
 		this.initPopup();
 		if (Util.isIphoneConnected() || Util.isMacConnected())
 		{
@@ -174,7 +159,8 @@ export default class IcloudTemplate extends InterfaceTemplate
 	openSyncWizard(appleId)
 	{
 		this.provider.setWizardSyncMode(true);
-		this.wizard = new IcloudSyncWizard();
+		const mode = this.provider.isStartedReconnecting ? 'reconnect' : 'default';
+		this.wizard = new IcloudSyncWizard({ mode });
 		this.wizard.openSlider();
 		this.provider.setActiveWizard(this.wizard);
 

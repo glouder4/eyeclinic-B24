@@ -856,11 +856,6 @@
 			});
 		},
 
-		getSuperposedTrackedGroups: function()
-		{
-			return this.config.trackingGroupList || [];
-		},
-
 		isUserCalendar: function()
 		{
 			return this.type === 'user';
@@ -1006,7 +1001,7 @@
 		getTextLocation: function(location)
 		{
 			var
-				value = typeof location === 'object' ? location : this.parseLocation(location),
+				value = BX.Type.isObject(location) ? location : this.parseLocation(location),
 				i, str = value.str;
 
 			if (value.type == 'mr')
@@ -1199,7 +1194,12 @@
 				window.BX = window.__BX;
 				delete window.__BX;
 			}
-		}
+		},
+
+		getCollabColor: function()
+		{
+			return '#19CC45';
+		},
 	};
 
 	Util.getSimpleTimeList = Util.prototype.getSimpleTimeList;

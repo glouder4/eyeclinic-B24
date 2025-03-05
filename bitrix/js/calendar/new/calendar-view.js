@@ -113,15 +113,6 @@
 			return this.name;
 		},
 
-		getPhone: function()
-		{
-			return this.phone;
-		},
-		getFio: function()
-		{
-			return this.fio;
-		},
-
 		getContainer: function()
 		{
 			return this.viewCont;
@@ -240,7 +231,6 @@
 						type: 'user',
 						isLocationCalendar: true,
 						locationAccess: this.calendar.util.config.locationAccess,
-						dayOfWeekMonthFormat: this.calendar.util.config.dayOfWeekMonthFormat,
 						ownerId: this.calendar.util.userId,
 						sections: this.calendar.roomsManager.getSections(),
 						roomsManager: this.calendar.roomsManager,
@@ -260,7 +250,6 @@
 						type: this.calendar.util.type,
 						isLocationCalendar: false,
 						locationAccess: this.calendar.util.config.locationAccess,
-						dayOfWeekMonthFormat: this.calendar.util.config.dayOfWeekMonthFormat,
 						ownerId: this.calendar.util.ownerId,
 						sections: this.calendar.sectionManager.getSections(),
 						trackingUserList: this.calendar.util.getSuperposedTrackedUsers(),
@@ -284,7 +273,6 @@
 				type: this.calendar.util.type,
 				isLocationCalendar: this.calendar.util.type === 'location',
 				locationAccess: this.calendar.util.config.locationAccess,
-				dayOfWeekMonthFormat: this.calendar.util.config.dayOfWeekMonthFormat,
 				ownerId: this.calendar.util.ownerId,
 				sections: this.calendar.util.type === 'location'
 					? this.calendar.roomsManager.getSections()
@@ -316,7 +304,6 @@
 					type: 'user',
 					isLocationCalendar: true,
 					locationAccess: this.calendar.util.config.locationAccess,
-					dayOfWeekMonthFormat: this.calendar.util.config.dayOfWeekMonthFormat,
 					roomsManager: this.calendar.roomsManager,
 					ownerId: this.calendar.util.ownerId,
 					userId: parseInt(this.calendar.currentUser.id)
@@ -330,7 +317,6 @@
 					type: this.calendar.util.type,
 					isLocationCalendar: false,
 					locationAccess: this.calendar.util.config.locationAccess,
-					dayOfWeekMonthFormat: this.calendar.util.config.dayOfWeekMonthFormat,
 					ownerId: this.calendar.util.ownerId,
 					userId: parseInt(this.calendar.currentUser.id)
 				});
@@ -347,10 +333,14 @@
 				{
 					return this.calendar.triggerEvent('entryClick', params);
 				}
-
 				if (params.entry.isTask())
 				{
-					BX.SidePanel.Instance.open(this.calendar.util.getViewTaskPath(params.entry.id), {loader: "task-new-loader"});
+					const viewTaskPath = BX.Uri.addParam(this.calendar.util.getViewTaskPath(params.entry.id), {
+						ta_sec: 'calendar',
+						ta_el: 'title_click',
+					});
+
+					BX.SidePanel.Instance.open(viewTaskPath, {loader: "task-new-loader"});
 				}
 				else if (!this.calendar.dragDrop.isDragging)
 				{
@@ -572,6 +562,7 @@
 						}
 
 						this.displayEntryPiece({
+							dayInCell: params.day.date,
 							entry: entryItem.entry,
 							part: entryItem.part,
 							holder: taskWrap,
@@ -582,7 +573,7 @@
 					{
 						if (!eventsWrap)
 						{
-							const time = entryItem.entry.from.getTime();
+							const time = params.day.date.getTime();
 							eventsTitle = BX.create('DIV', {
 								props: { className: 'calendar-event-title calendar-event-title-button' },
 								attrs: { 'data-bx-calendar-date': time },
@@ -593,6 +584,7 @@
 						}
 
 						this.displayEntryPiece({
+							dayInCell: params.day.date,
 							entry: entryItem.entry,
 							part: entryItem.part,
 							holder: eventsWrap,
@@ -701,6 +693,18 @@
 		getHotkey: function()
 		{
 			return this.hotkey || null;
+		},
+
+		shouldEntryLookLikeSharing: function(entry)
+		{
+			return entry.isSharingEvent()
+				|| (this.util.config.type === 'group' && entry.isSharingCollabEvent());
+		},
+
+		shouldEntryLookLikeCollab: function(entry)
+		{
+			return entry.isCollabEvent()
+				|| (this.util.config.type !== 'group' && entry.isSharingCollabEvent());
 		},
 	};
 

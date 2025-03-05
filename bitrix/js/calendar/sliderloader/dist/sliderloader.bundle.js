@@ -1,12 +1,13 @@
+/* eslint-disable */
 this.BX = this.BX || {};
-(function (exports,main_core,calendar_sharing_deletedviewform) {
+(function (exports,main_core) {
 	'use strict';
 
 	class SliderLoader {
 	  constructor(entryId, options = {}) {
-	    this.extensionName = main_core.Type.isString(entryId) && (entryId === 'NEW' || entryId.substr(0, 4) === 'EDIT') || !parseInt(entryId) ? 'EventEditForm' : 'EventViewForm';
+	    this.extensionName = main_core.Type.isString(entryId) && (entryId === 'NEW' || entryId.substring(0, 4) === 'EDIT') || !parseInt(entryId) ? 'EventEditForm' : 'EventViewForm';
 	    this.sliderId = options.sliderId || "calendar:slider-" + Math.random();
-	    entryId = main_core.Type.isString(entryId) && entryId.substr(0, 4) === 'EDIT' ? parseInt(entryId.substr(4)) : parseInt(entryId);
+	    entryId = main_core.Type.isString(entryId) && entryId.substring(0, 4) === 'EDIT' ? parseInt(entryId.substring(4)) : parseInt(entryId);
 	    this.extensionParams = {
 	      entryId: entryId,
 	      entry: options.entry || null,
@@ -38,9 +39,6 @@ this.BX = this.BX || {};
 	    if (options.locationCapacity) {
 	      this.extensionParams.locationCapacity = options.locationCapacity;
 	    }
-	    if (options.dayOfWeekMonthFormat) {
-	      this.extensionParams.dayOfWeekMonthFormat = options.dayOfWeekMonthFormat;
-	    }
 	    if (main_core.Type.isDate(options.entryDateFrom)) {
 	      this.extensionParams.entryDateFrom = options.entryDateFrom;
 	    }
@@ -61,13 +59,17 @@ this.BX = this.BX || {};
 	    if (main_core.Type.isBoolean(options.isSharing) && options.isSharing === true) {
 	      this.isSharing = true;
 	    }
+	    if (main_core.Type.isStringFilled(options.jumpToControl)) {
+	      this.extensionParams.jumpToControl = options.jumpToControl;
+	    }
+	    if (options.createChatId) {
+	      this.extensionParams.createChatId = options.createChatId;
+	    }
 	  }
 	  show() {
 	    if (this.isSharing) {
 	      BX.SidePanel.Instance.open(this.sliderId, {
-	        contentCallback: slider => new Promise(resolve => {
-	          new calendar_sharing_deletedviewform.DeletedViewForm(this.extensionParams.entryId).initInSlider(slider, resolve);
-	        }),
+	        contentCallback: this.loadDeletedViewForm.bind(this),
 	        width: 600
 	      });
 	    } else {
@@ -96,9 +98,17 @@ this.BX = this.BX || {};
 	      });
 	    });
 	  }
+	  async loadDeletedViewForm(slider) {
+	    const {
+	      DeletedViewForm
+	    } = await main_core.Runtime.loadExtension('calendar.sharing.deletedviewform');
+	    return new Promise(resolve => {
+	      new DeletedViewForm(this.extensionParams.entryId).initInSlider(slider, resolve);
+	    });
+	  }
 	}
 
 	exports.SliderLoader = SliderLoader;
 
-}((this.BX.Calendar = this.BX.Calendar || {}),BX,BX.Calendar.Sharing));
+}((this.BX.Calendar = this.BX.Calendar || {}),BX));
 //# sourceMappingURL=sliderloader.bundle.js.map
