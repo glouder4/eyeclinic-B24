@@ -243,68 +243,68 @@ this.BX = this.BX || {};
 				</div>
 			</div>
 				<div class="calendar-field-container calendar-field-container-string-select">
-				<div class="calendar-field-block custom-fields">
-
-				  <div class="row">
-					  <div id="event-phone-field">
-						<div class="ui-entity-editor-block-title">
-							<label class="ui-entity-editor-block-title-text">Телефон</label>
-							${0}
-					  	</div>
-					  	
-					  	
-					  </div>
-					  <div id="event-fio-field">
-						<div class="ui-entity-editor-block-title">
-							<label class="ui-entity-editor-block-title-text">ФИО</label>
-							${0}
-					  	</div>
-					  </div>
-				  </div>
-					  <div id="service-name-wrapper">
-						  <div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
-								<label class="ui-entity-editor-block-title-text">Название услуги</label>
-								${0}
+					<div class="calendar-field-block custom-fields">
+	
+						  <div class="row">
+							  <div id="event-phone-field">
+								<div class="ui-entity-editor-block-title">
+									<label class="ui-entity-editor-block-title-text">Телефон</label>
+									${0}
+								</div>
+								
+								
+							  </div>
+							  <div id="event-fio-field">
+								<div class="ui-entity-editor-block-title">
+									<label class="ui-entity-editor-block-title-text">ФИО</label>
+									${0}
+								</div>
+							  </div>
 						  </div>
-						  <div class="ui-entity-editor-block-title" id="service-time-duration">
-								<label class="ui-entity-editor-block-title-text">Длительность</label>
-								${0}
+							  <div id="service-name-wrapper">
+								  <div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
+										<label class="ui-entity-editor-block-title-text">Название услуги</label>
+										${0}
+								  </div>
+								  <div class="ui-entity-editor-block-title" id="service-time-duration">
+										<label class="ui-entity-editor-block-title-text">Длительность</label>
+										${0}
+								  </div>
+							  </div>
+							<div id="service-region-wrapper">
+								<div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
+									<label class="ui-entity-editor-block-title-text">Регион</label>
+										${0}
+								  </div>
+							</div>
+						  <div class="row">
+							  <div id="price-field-wrapper">
+								<div class="ui-entity-editor-block-title" id="price-field-title-wrapper">
+									<label class="ui-entity-editor-block-title-text">Цена</label>
+									${0}
+								</div>
+							  </div>
+							  
+							  <div id="doctor-field-wrapper">
+								<div class="ui-entity-editor-block-title" id="doctor-field-title-wrapper">
+									<label class="ui-entity-editor-block-title-text">Врач</label>
+									${0}
+								</div>
+							  </div>
 						  </div>
-					  </div>
-					<div id="service-region-wrapper">
-					  	<div class="ui-entity-editor-block-title" id="service-name-field-wrapper">
-							<label class="ui-entity-editor-block-title-text">Регион</label>
+						  <div id="contact-from-wrapper">
+							<div class="ui-entity-editor-block-title" id="contact-from-field-wrapper">
+								<label class="ui-entity-editor-block-title-text">Источник</label>
+									${0}
+							  </div>
+						  </div>
+						  <div id="comment-wrapper">
+							<div class="ui-entity-editor-block-title" id="comment-field-title-wrapper">
+								<label class="ui-entity-editor-block-title-text">Комментарий</label>
 								${0}
+							</div>
 						  </div>
 					</div>
-				  <div class="row">
-					  <div id="price-field-wrapper">
-						<div class="ui-entity-editor-block-title" id="price-field-title-wrapper">
-							<label class="ui-entity-editor-block-title-text">Цена</label>
-							${0}
-						</div>
-					  </div>
-					  
-					  <div id="doctor-field-wrapper">
-						<div class="ui-entity-editor-block-title" id="doctor-field-title-wrapper">
-							<label class="ui-entity-editor-block-title-text">Врач</label>
-							${0}
-						</div>
-					  </div>
-				  </div>
-				  <div id="contact-from-wrapper">
-					<div class="ui-entity-editor-block-title" id="contact-from-field-wrapper">
-						<label class="ui-entity-editor-block-title-text">Источник</label>
-							${0}
-					  </div>
-				  </div>
-				  <div id="comment-wrapper">
-				  	<div class="ui-entity-editor-block-title" id="comment-field-title-wrapper">
-						<label class="ui-entity-editor-block-title-text">Комментарий</label>
-						${0}
-					</div>
-				  </div>
-				</div>
 				</div>
 
 
